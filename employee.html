@@ -6,466 +6,333 @@
   <title>Employee | Warehouse Pallet Manager</title>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 0;
-    }
-
-    header {
-      background: #1f5eff;
-      color: white;
-      padding: 18px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 22px;
-    }
-
-    .user-info {
-      font-size: 14px;
-    }
-
-    .logout {
-      background: white;
-      color: #1f5eff;
-      border: none;
-      padding: 9px 14px;
-      border-radius: 7px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 12px;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 30px auto;
-      padding: 0 20px;
-    }
-
-    .card {
-      background: white;
-      padding: 24px;
-      border-radius: 14px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      margin-bottom: 24px;
-    }
-
-    h2 {
-      margin-top: 0;
-    }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin-top: 15px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 6px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 15px;
-      box-sizing: border-box;
-    }
-
-    button {
-      border: none;
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 18px;
-    }
-
-    .primary {
-      background: #1f5eff;
-      color: white;
-    }
-
-    .secondary {
-      background: #e9eefc;
-      color: #1f5eff;
-    }
-
-    .danger {
-      background: #ffe5e5;
-      color: #b00020;
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
-
-    .suggestions {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin-top: 4px;
-      background: white;
-      max-height: 220px;
-      overflow-y: auto;
-      display: none;
-    }
-
-    .suggestion-item {
-      padding: 10px;
-      cursor: pointer;
-      border-bottom: 1px solid #eee;
-    }
-
-    .suggestion-item:hover {
-      background: #f0f4ff;
-    }
-
-    .selected-product {
-      background: #f7f9ff;
-      border: 1px solid #dce5ff;
-      padding: 15px;
-      border-radius: 10px;
-      margin-top: 18px;
-      display: none;
-    }
-
-    .message {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-
-    .success {
-      color: green;
-    }
-
-    .error {
-      color: red;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 18px;
-    }
-
-    th, td {
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-      padding: 10px;
-      font-size: 14px;
-    }
-
-    th {
-      background: #f4f6f8;
-    }
-
-    @media (max-width: 700px) {
-      .row {
-        grid-template-columns: 1fr;
-      }
-
-      header {
-        display: block;
-      }
-
-      .logout {
-        margin-left: 0;
-        margin-top: 10px;
-      }
-    }
+    body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; }
+    header { background:#1f5eff; color:white; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; }
+    header h1 { margin:0; font-size:22px; }
+    .logout { background:white; color:#1f5eff; border:0; padding:9px 14px; border-radius:7px; font-weight:bold; cursor:pointer; }
+    .container { max-width:1200px; margin:30px auto; padding:0 20px; }
+    .card { background:white; padding:24px; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,.08); margin-bottom:24px; }
+    label { display:block; font-weight:bold; margin-top:12px; }
+    input { width:100%; padding:11px; margin-top:6px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box; }
+    button { border:0; border-radius:8px; padding:11px 15px; font-weight:bold; cursor:pointer; margin-top:14px; }
+    .primary { background:#1f5eff; color:white; }
+    .secondary { background:#e9eefc; color:#1f5eff; }
+    .danger { background:#ffe5e5; color:#b00020; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    table { width:100%; border-collapse:collapse; margin-top:18px; }
+    th, td { border-bottom:1px solid #ddd; padding:9px; text-align:left; font-size:14px; }
+    th { background:#f4f6f8; }
+    td input { margin:0; padding:8px; }
+    .suggestions { border:1px solid #ccc; border-radius:8px; background:white; max-height:220px; overflow:auto; display:none; position:absolute; z-index:10; width:100%; }
+    .suggestion-item { padding:10px; cursor:pointer; border-bottom:1px solid #eee; }
+    .suggestion-item:hover { background:#f0f4ff; }
+    .search-wrap { position:relative; }
+    .message { margin-top:14px; font-weight:bold; }
+    .success { color:green; }
+    .error { color:red; }
   </style>
 </head>
 
 <body>
-  <header>
-    <div>
-      <h1>Employee Portal</h1>
-      <div class="user-info" id="userInfo"></div>
-    </div>
-    <button class="logout" onclick="logout()">Logout</button>
-  </header>
+<header>
+  <div>
+    <h1>Employee Portal</h1>
+    <div id="userInfo"></div>
+  </div>
+  <button class="logout" onclick="logout()">Logout</button>
+</header>
 
-  <div class="container">
+<div class="container">
 
-    <div class="card">
-      <h2>Add Product to Pallet</h2>
+  <div class="card">
+    <h2>Select Pallet</h2>
 
-      <div class="row">
-        <div>
-          <label for="palletNumber">Pallet Number</label>
-          <input type="text" id="palletNumber" placeholder="Example: 12" />
-        </div>
-
-        <div>
-          <label for="searchProduct">Search Product by Description or Item No.</label>
-          <input type="text" id="searchProduct" placeholder="Start typing product name or item number..." autocomplete="off" />
-          <div id="suggestions" class="suggestions"></div>
-        </div>
+    <div class="row">
+      <div>
+        <label for="palletNumber">Pallet Number</label>
+        <input id="palletNumber" placeholder="Example: 12" />
       </div>
 
-      <div id="selectedProduct" class="selected-product">
-        <strong>Selected Product:</strong>
-        <p id="productDetails"></p>
+      <div>
+        <button class="primary" onclick="loadPallet()">Load Pallet</button>
       </div>
-
-      <div class="row">
-        <div>
-          <label for="bpc">Bottles Per Case</label>
-          <input type="number" id="bpc" placeholder="Example: 12" />
-        </div>
-      
-        <div>
-          <label for="cases">Total Cases</label>
-          <input type="number" id="cases" placeholder="Example: 25" />
-        </div>
-      </div>
-      
-      <div class="row">
-        <div>
-          <label for="looseBottles">Loose Bottles</label>
-          <input type="number" id="looseBottles" placeholder="Example: 6" value="0" />
-        </div>
-      </div>
-
-      <label for="notes">Notes</label>
-      <input type="text" id="notes" placeholder="Optional notes..." />
-
-      <button class="primary" onclick="savePalletEntry()">Save Product to Pallet</button>
-
-      <div id="saveMessage" class="message"></div>
     </div>
 
-    <div class="card">
-      <h2>Current Session Entries</h2>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Pallet</th>
-            <th>Item No.</th>
-            <th>Description</th>
-            <th>BPC</th>
-            <th>Cases</th>
-            <th>Total Bottles</th>
-            <th>Notes</th>
-          </tr>
-        </thead>
-        <tbody id="sessionTableBody">
-          <tr>
-            <td colspan="7">No entries added yet.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
+    <div id="loadMessage" class="message"></div>
   </div>
 
-  <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAbXsGGXVbF3H1yw3sQdpihxtCVwk3yCI0cONL0s6u1CwPa9iCU84AekD7ci_4MBxkVA/exec";
+  <div class="card">
+    <h2>Add Product Line</h2>
 
-    let currentUser = null;
-    let inventory = [];
-    let selectedItem = null;
-    let sessionEntries = [];
+    <div class="search-wrap">
+      <label for="productSearch">Search Product by Description or Item No.</label>
+      <input id="productSearch" placeholder="Start typing..." autocomplete="off" />
+      <div id="suggestions" class="suggestions"></div>
+    </div>
+  </div>
 
-    window.onload = function() {
-      const savedUser = localStorage.getItem("warehouseUser");
+  <div class="card">
+    <h2>Current Pallet Batch</h2>
 
-      if (!savedUser) {
-        window.location.href = "login.html";
-        return;
-      }
+    <table>
+      <thead>
+        <tr>
+          <th>Item No.</th>
+          <th>Description</th>
+          <th>BPC</th>
+          <th>Cases</th>
+          <th>Loose Bottles</th>
+          <th>Total Bottles</th>
+          <th>Notes</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="batchBody">
+        <tr><td colspan="8">Load a pallet or add products to begin.</td></tr>
+      </tbody>
+    </table>
 
-      currentUser = JSON.parse(savedUser);
+    <button class="primary" onclick="submitBatch()">Submit Full Pallet Batch</button>
+    <div id="saveMessage" class="message"></div>
+  </div>
 
-      if (currentUser.role !== "Employee" && currentUser.role !== "Manager") {
-        window.location.href = "login.html";
-        return;
-      }
+</div>
 
-      document.getElementById("userInfo").textContent =
-        `Logged in as ${currentUser.name} | ${currentUser.role}`;
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwz28gjSwVhpHEz1Mip5D-bW_E94thce52inF0BfJOQOqVSbiyK4jUo2oJV6XbOn8q9bg/exec";
 
-      loadInventory();
-    };
+let currentUser = null;
+let inventory = [];
+let batchEntries = [];
 
-    function logout() {
-      localStorage.removeItem("warehouseUser");
-      window.location.href = "login.html";
+window.onload = async function () {
+  const savedUser = localStorage.getItem("warehouseUser");
+
+  if (!savedUser) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  currentUser = JSON.parse(savedUser);
+
+  document.getElementById("userInfo").textContent =
+    `Logged in as ${currentUser.name} | ${currentUser.role}`;
+
+  await loadInventory();
+};
+
+function logout() {
+  localStorage.removeItem("warehouseUser");
+  window.location.href = "login.html";
+}
+
+async function loadInventory() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getInventory`);
+    const result = await response.json();
+
+    if (result.success) {
+      inventory = result.inventory || [];
+    } else {
+      showMessage("loadMessage", result.message, "error");
     }
+  } catch {
+    showMessage("loadMessage", "Could not load inventory.", "error");
+  }
+}
 
-    async function loadInventory() {
-      try {
-        const response = await fetch(`${SCRIPT_URL}?action=getInventory`);
-        const result = await response.json();
+async function loadPallet() {
+  const palletNumber = document.getElementById("palletNumber").value.trim();
 
-        if (result.success) {
-          inventory = result.inventory || [];
-        } else {
-          showMessage("saveMessage", result.message, "error");
-        }
-      } catch (error) {
-        showMessage("saveMessage", "Could not load inventory.", "error");
+  if (!palletNumber) {
+    showMessage("loadMessage", "Enter a pallet number first.", "error");
+    return;
+  }
+
+  try {
+    showMessage("loadMessage", "Loading pallet...", "");
+
+    const response = await fetch(
+      `${SCRIPT_URL}?action=getPallet&palletNumber=${encodeURIComponent(palletNumber)}`
+    );
+
+    const result = await response.json();
+
+    if (result.success) {
+      batchEntries = result.palletItems || [];
+      renderBatchTable();
+
+      if (batchEntries.length) {
+        showMessage("loadMessage", `Loaded ${batchEntries.length} product line(s) from pallet ${palletNumber}.`, "success");
+      } else {
+        showMessage("loadMessage", `Pallet ${palletNumber} is empty. You can start adding products.`, "success");
       }
+    } else {
+      showMessage("loadMessage", result.message, "error");
     }
+  } catch {
+    showMessage("loadMessage", "Could not load pallet.", "error");
+  }
+}
 
-    const searchInput = document.getElementById("searchProduct");
-    const suggestionsBox = document.getElementById("suggestions");
+const searchInput = document.getElementById("productSearch");
+const suggestionsBox = document.getElementById("suggestions");
 
-    searchInput.addEventListener("input", function() {
-      const query = this.value.toLowerCase().trim();
-      suggestionsBox.innerHTML = "";
+searchInput.addEventListener("input", function () {
+  const query = this.value.toLowerCase().trim();
+  suggestionsBox.innerHTML = "";
 
-      if (!query) {
-        suggestionsBox.style.display = "none";
-        return;
-      }
+  if (!query) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
 
-      const matches = inventory.filter(item => {
-        return (
-          String(item.itemNo).toLowerCase().includes(query) ||
-          String(item.description).toLowerCase().includes(query)
-        );
-      }).slice(0, 20);
+  const matches = inventory.filter(item =>
+    String(item.itemNo).toLowerCase().includes(query) ||
+    String(item.description).toLowerCase().includes(query)
+  ).slice(0, 20);
 
-      if (matches.length === 0) {
-        suggestionsBox.style.display = "none";
-        return;
-      }
+  if (!matches.length) {
+    suggestionsBox.style.display = "none";
+    return;
+  }
 
-      matches.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "suggestion-item";
-        div.textContent = `${item.itemNo} - ${item.description}`;
-        div.onclick = () => selectProduct(item);
-        suggestionsBox.appendChild(div);
-      });
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onclick = () => addProductToBatch(item);
+    suggestionsBox.appendChild(div);
+  });
 
-      suggestionsBox.style.display = "block";
+  suggestionsBox.style.display = "block";
+});
+
+function addProductToBatch(item) {
+  const alreadyExists = batchEntries.some(entry =>
+    String(entry.itemNo) === String(item.itemNo)
+  );
+
+  if (alreadyExists) {
+    showMessage("saveMessage", "This product is already on the batch table.", "error");
+    searchInput.value = "";
+    suggestionsBox.style.display = "none";
+    return;
+  }
+
+  batchEntries.push({
+    itemNo: item.itemNo,
+    description: item.description,
+    bpc: item.bpc || "",
+    cases: 0,
+    looseBottles: 0,
+    totalBottles: 0,
+    notes: ""
+  });
+
+  searchInput.value = "";
+  suggestionsBox.style.display = "none";
+  renderBatchTable();
+}
+
+function renderBatchTable() {
+  const tbody = document.getElementById("batchBody");
+  tbody.innerHTML = "";
+
+  if (!batchEntries.length) {
+    tbody.innerHTML = `<tr><td colspan="8">No products added to this pallet yet.</td></tr>`;
+    return;
+  }
+
+  batchEntries.forEach((entry, index) => {
+    const bpc = Number(entry.bpc || 0);
+    const cases = Number(entry.cases || 0);
+    const loose = Number(entry.looseBottles || 0);
+    entry.totalBottles = (bpc * cases) + loose;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${entry.itemNo}</td>
+      <td>${entry.description}</td>
+      <td><input type="number" value="${entry.bpc || ""}" onchange="updateEntry(${index}, 'bpc', this.value)" /></td>
+      <td><input type="number" value="${entry.cases || 0}" onchange="updateEntry(${index}, 'cases', this.value)" /></td>
+      <td><input type="number" value="${entry.looseBottles || 0}" onchange="updateEntry(${index}, 'looseBottles', this.value)" /></td>
+      <td>${entry.totalBottles}</td>
+      <td><input value="${entry.notes || ""}" onchange="updateEntry(${index}, 'notes', this.value)" /></td>
+      <td><button class="danger" onclick="removeEntry(${index})">Remove</button></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+function updateEntry(index, field, value) {
+  if (["bpc", "cases", "looseBottles"].includes(field)) {
+    batchEntries[index][field] = Number(value || 0);
+  } else {
+    batchEntries[index][field] = value;
+  }
+
+  renderBatchTable();
+}
+
+function removeEntry(index) {
+  batchEntries.splice(index, 1);
+  renderBatchTable();
+}
+
+async function submitBatch() {
+  const palletNumber = document.getElementById("palletNumber").value.trim();
+
+  if (!palletNumber) {
+    showMessage("saveMessage", "Pallet number is required.", "error");
+    return;
+  }
+
+  if (!batchEntries.length) {
+    showMessage("saveMessage", "Add at least one product before submitting.", "error");
+    return;
+  }
+
+  for (const entry of batchEntries) {
+    if (!entry.bpc || Number(entry.bpc) <= 0) {
+      showMessage("saveMessage", `BPC is required for ${entry.description}.`, "error");
+      return;
+    }
+  }
+
+  try {
+    showMessage("saveMessage", "Submitting pallet batch...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "savePalletBatch",
+        palletNumber,
+        entries: batchEntries,
+        employeeName: currentUser.name,
+        employeeUsername: currentUser.username
+      })
     });
 
-    function selectProduct(item) {
-      selectedItem = item;
+    const result = await response.json();
 
-      searchInput.value = `${item.itemNo} - ${item.description}`;
-      suggestionsBox.style.display = "none";
-
-      document.getElementById("selectedProduct").style.display = "block";
-      document.getElementById("productDetails").textContent =
-        `Item No: ${item.itemNo} | Description: ${item.description} | Vendor: ${item.vendor || ""} | Sales Rep: ${item.salesRep || ""}`;
-
-      document.getElementById("bpc").value = item.bpc || "";
+    if (result.success) {
+      showMessage("saveMessage", "Full pallet batch saved successfully.", "success");
+    } else {
+      showMessage("saveMessage", result.message, "error");
     }
+  } catch {
+    showMessage("saveMessage", "Could not submit pallet batch.", "error");
+  }
+}
 
-    async function savePalletEntry() {
-      const palletNumber = document.getElementById("palletNumber").value.trim();
-      const bpc = Number(document.getElementById("bpc").value);
-      const cases = Number(document.getElementById("cases").value);
-      const notes = document.getElementById("notes").value.trim();
-
-      if (!palletNumber) {
-        showMessage("saveMessage", "Pallet number is required.", "error");
-        return;
-      }
-
-      if (!selectedItem) {
-        showMessage("saveMessage", "Please select a product.", "error");
-        return;
-      }
-
-      if (!bpc || bpc <= 0) {
-        showMessage("saveMessage", "Bottles per case is required.", "error");
-        return;
-      }
-
-      if (!cases || cases <= 0) {
-        showMessage("saveMessage", "Total cases is required.", "error");
-        return;
-      }
-
-      const looseBottles = Number(document.getElementById("looseBottles").value) || 0;
-      const totalBottles = (bpc * cases) + looseBottles;
-
-      const entry = {
-        palletNumber,
-        itemNo: selectedItem.itemNo,
-        description: selectedItem.description,
-        bpc,
-        cases,
-        looseBottles,
-        totalBottles,
-        notes,
-        employeeName: currentUser.name,
-        employeeUsername: currentUser.username,
-        timestamp: new Date().toLocaleString()
-      };
-
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            action: "savePalletEntry",
-            entry
-          })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          sessionEntries.push(entry);
-          renderSessionTable();
-          clearEntryForm();
-          showMessage("saveMessage", "Product saved to pallet successfully.", "success");
-        } else {
-          showMessage("saveMessage", result.message, "error");
-        }
-
-      } catch (error) {
-        showMessage("saveMessage", "Could not save entry.", "error");
-      }
-    }
-
-    function renderSessionTable() {
-      const tbody = document.getElementById("sessionTableBody");
-      tbody.innerHTML = "";
-
-      sessionEntries.forEach(entry => {
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-          <td>${entry.palletNumber}</td>
-          <td>${entry.itemNo}</td>
-          <td>${entry.description}</td>
-          <td>${entry.bpc}</td>
-          <td>${entry.cases}</td>
-          <td>${entry.totalBottles}</td>
-          <td>${entry.notes}</td>
-        `;
-
-        tbody.appendChild(tr);
-      });
-    }
-
-    function clearEntryForm() {
-      document.getElementById("searchProduct").value = "";
-      document.getElementById("bpc").value = "";
-      document.getElementById("cases").value = "";
-      document.getElementById("notes").value = "";
-      document.getElementById("selectedProduct").style.display = "none";
-      selectedItem = null;
-    }
-
-    function showMessage(id, text, type) {
-      const el = document.getElementById(id);
-      el.textContent = text;
-      el.className = `message ${type}`;
-    }
-  </script>
+function showMessage(id, text, type) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = `message ${type}`;
+}
+</script>
 </body>
 </html>
