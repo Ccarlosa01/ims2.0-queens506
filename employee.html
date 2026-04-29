@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Employee | Warehouse Pallet Manager</title>
+  <title>Warehouse Pallet Manager</title>
 
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; color:#222; }
@@ -20,7 +20,6 @@
     .secondary { background:#e9eefc; color:#1f5eff; }
     .danger { background:#ffe5e5; color:#b00020; }
     .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:end; }
-    .row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; align-items:end; }
     table { width:100%; border-collapse:collapse; margin-top:18px; }
     th, td { border-bottom:1px solid #ddd; padding:9px; text-align:left; font-size:14px; vertical-align:top; }
     th { background:#f4f6f8; }
@@ -38,8 +37,9 @@
     .tab-btn.active { background:#1f5eff; color:white; }
     .tab-section { display:none; }
     .tab-section.active { display:block; }
+
     @media (max-width: 800px) {
-      .row, .row-3 { grid-template-columns:1fr; }
+      .row { grid-template-columns:1fr; }
       header { display:block; }
       .logout { margin-top:10px; }
     }
@@ -49,7 +49,7 @@
 <body>
 <header>
   <div>
-    <h1>Employee Portal</h1>
+    <h1>Warehouse Pallet Manager</h1>
     <div id="userInfo"></div>
     <div id="maxPalletInfo" class="muted"></div>
   </div>
@@ -62,6 +62,10 @@
     <button class="tab-btn active" onclick="showTab('workbench', this)">Update Pallet</button>
     <button class="tab-btn" onclick="showTab('catalog', this)">Catalog View</button>
     <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
+
+    <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
+      Inventory Upload
+    </button>
   </div>
 
   <div id="workbench" class="tab-section active">
@@ -89,7 +93,7 @@
 
       <div class="search-wrap">
         <label for="productSearch">Search Product by Description or Item No.</label>
-        <input id="productSearch" placeholder="Start typing..." autocomplete="off" />
+        <input id="productSearch" placeholder="Start typing product name or item number..." autocomplete="off" />
         <div id="suggestions" class="suggestions"></div>
       </div>
     </div>
@@ -183,10 +187,29 @@
 
   </div>
 
+  <div id="inventoryUpload" class="tab-section manager-only" style="display:none;">
+
+    <div class="card">
+      <h2>Inventory Upload</h2>
+      <p class="muted">
+        Manager-only tool. Upload an .xls, .xlsx, or .csv file with headers matching the Inventory tab.
+      </p>
+
+      <input type="file" id="inventoryFile" accept=".xls,.xlsx,.csv" />
+
+      <button class="primary" onclick="uploadInventoryFile()">Upload Inventory</button>
+
+      <div id="inventoryUploadMessage" class="message"></div>
+    </div>
+
+  </div>
+
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwIlXTCSiZ006oSegpYJjkcdbgCF8nH-LzIeUzoLsdq8BAlXyMRLXODkM3qFiYt9aQvTg/exec";
+const SCRIPT_URL = "PASTE_YOUR_GOOGLE_SCRIPT_WEB_APP_URL_HERE";
 
 let currentUser = null;
 let inventory = [];
@@ -207,6 +230,14 @@ window.onload = async function () {
   if (currentUser.role !== "Employee" && currentUser.role !== "Manager") {
     window.location.href = "login.html";
     return;
+  }
+
+  if (currentUser.role === "Manager") {
+    document.querySelectorAll(".manager-only").forEach(el => {
+      el.style.display = "block";
+    });
+
+    document.getElementById("inventoryUploadTabBtn").style.display = "inline-block";
   }
 
   document.getElementById("userInfo").textContent =
@@ -639,6 +670,65 @@ async function clearMultiplePallets() {
     }
   } catch {
     showMessage("clearMessage", "Could not clear selected pallets.", "error");
+  }
+}
+
+async function uploadInventoryFile() {
+  const fileInput = document.getElementById("inventoryFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showMessage("inventoryUploadMessage", "Please choose an inventory file first.", "error");
+    return;
+  }
+
+  if (currentUser.role !== "Manager") {
+    showMessage("inventoryUploadMessage", "Only managers can upload inventory.", "error");
+    return;
+  }
+
+  try {
+    showMessage("inventoryUploadMessage", "Reading inventory file...", "");
+
+    const data = await file.arrayBuffer();
+
+    const workbook = XLSX.read(data, {
+      type: "array"
+    });
+
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    const rows = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: ""
+    });
+
+    if (!rows.length) {
+      showMessage("inventoryUploadMessage", "The uploaded file is empty.", "error");
+      return;
+    }
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "replaceInventory",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("inventoryUploadMessage", result.message, "success");
+      await loadInventory();
+      fileInput.value = "";
+    } else {
+      showMessage("inventoryUploadMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryUploadMessage", "Could not upload inventory file.", "error");
   }
 }
 
