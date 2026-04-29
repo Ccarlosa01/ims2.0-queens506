@@ -62,6 +62,7 @@
     <button class="tab-btn active" onclick="showTab('workbench', this)">Update Pallet</button>
     <button class="tab-btn" onclick="showTab('catalog', this)">Catalog View</button>
     <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
+    <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
 
     <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
       Inventory Upload
@@ -187,6 +188,78 @@
 
   </div>
 
+  <div id="breakers" class="tab-section">
+  
+    <div class="card">
+      <h2>Log Broken Product</h2>
+      <p class="muted">
+        Search by Item No. or Description. Cost, Sales Rep, and Vendor will autofill from Inventory.
+      </p>
+  
+      <div class="search-wrap">
+        <label for="breakerSearch">Search Product</label>
+        <input id="breakerSearch" placeholder="Start typing product name or item number..." autocomplete="off" />
+        <div id="breakerSuggestions" class="suggestions"></div>
+      </div>
+  
+      <div id="selectedBreakerProduct" class="message"></div>
+  
+      <div class="row">
+        <div>
+          <label for="breakerQty">Breaker</label>
+          <input type="number" id="breakerQty" min="0" value="0" oninput="calculateBreakerTotals()" />
+        </div>
+  
+        <div>
+          <label for="spoiledQty">Spoiled</label>
+          <input type="number" id="spoiledQty" min="0" value="0" oninput="calculateBreakerTotals()" />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label for="damagedLabelQty">Damaged Label</label>
+          <input type="number" id="damagedLabelQty" min="0" value="0" oninput="calculateBreakerTotals()" />
+        </div>
+  
+        <div>
+          <label for="breakerQuantity">Quantity</label>
+          <input type="number" id="breakerQuantity" readonly />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label for="costEa">Cost / EA</label>
+          <input type="number" id="costEa" readonly />
+        </div>
+  
+        <div>
+          <label for="totalCost">Total Cost</label>
+          <input type="number" id="totalCost" readonly />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label for="breakerSalesRep">Sales Rep</label>
+          <input id="breakerSalesRep" readonly />
+        </div>
+  
+        <div>
+          <label for="breakerVendor">Vendor</label>
+          <input id="breakerVendor" readonly />
+        </div>
+      </div>
+  
+      <button class="primary" onclick="saveBreakerEntry()">Submit Breaker Entry</button>
+  
+      <div id="breakerMessage" class="message"></div>
+    </div>
+  
+  </div>
+
+  
   <div id="inventoryUpload" class="tab-section">
 
     <div class="card">
@@ -209,7 +282,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwpd8qY5S-yffNsm2shrPcQzVzPaVjMlg2BfbL_7qgWL6WOGxcbSBVwvem91TyVAZ0HDA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPJQAvzP6ZJ0Mh5qCuBphTHuzQrEB73GNPMDpw9gcV4u2VDYVg_3YwUXgZwINrjLuW5w/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -746,7 +819,8 @@ function clearAllMessages() {
     "saveMessage",
     "totalsBox",
     "clearMessage",
-    "inventoryUploadMessage"
+    "inventoryUploadMessage",
+    "breakerMessage"
   ];
 
   messageIds.forEach(id => {
@@ -756,6 +830,139 @@ function clearAllMessages() {
       el.className = "message";
     }
   });
+}
+
+let selectedBreakerItem = null;
+
+const breakerSearchInput = document.getElementById("breakerSearch");
+const breakerSuggestionsBox = document.getElementById("breakerSuggestions");
+
+breakerSearchInput.addEventListener("input", function () {
+  const query = this.value.toLowerCase().trim();
+  breakerSuggestionsBox.innerHTML = "";
+
+  if (!query) {
+    breakerSuggestionsBox.style.display = "none";
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo).toLowerCase().includes(query) ||
+    String(item.description).toLowerCase().includes(query)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    breakerSuggestionsBox.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onclick = () => selectBreakerProduct(item);
+    breakerSuggestionsBox.appendChild(div);
+  });
+
+  breakerSuggestionsBox.style.display = "block";
+});
+
+function selectBreakerProduct(item) {
+  selectedBreakerItem = item;
+
+  breakerSearchInput.value = `${item.itemNo} - ${item.description}`;
+  breakerSuggestionsBox.style.display = "none";
+
+  document.getElementById("selectedBreakerProduct").textContent =
+    `Selected: ${item.itemNo} | ${item.description}`;
+
+  document.getElementById("costEa").value = Number(item.costEa || 0);
+  document.getElementById("breakerSalesRep").value = item.salesRep || "";
+  document.getElementById("breakerVendor").value = item.vendor || "";
+
+  calculateBreakerTotals();
+}
+
+function calculateBreakerTotals() {
+  const breaker = Number(document.getElementById("breakerQty").value || 0);
+  const spoiled = Number(document.getElementById("spoiledQty").value || 0);
+  const damagedLabel = Number(document.getElementById("damagedLabelQty").value || 0);
+  const costEa = Number(document.getElementById("costEa").value || 0);
+
+  const quantity = breaker + spoiled + damagedLabel;
+  const totalCost = quantity * costEa;
+
+  document.getElementById("breakerQuantity").value = quantity;
+  document.getElementById("totalCost").value = totalCost.toFixed(2);
+}
+
+async function saveBreakerEntry() {
+  if (!selectedBreakerItem) {
+    showMessage("breakerMessage", "Please select a product first.", "error");
+    return;
+  }
+
+  const breaker = Number(document.getElementById("breakerQty").value || 0);
+  const spoiled = Number(document.getElementById("spoiledQty").value || 0);
+  const damagedLabel = Number(document.getElementById("damagedLabelQty").value || 0);
+  const quantity = breaker + spoiled + damagedLabel;
+
+  if (quantity <= 0) {
+    showMessage("breakerMessage", "Enter at least one quantity.", "error");
+    return;
+  }
+
+  const entry = {
+    itemNo: selectedBreakerItem.itemNo,
+    description: selectedBreakerItem.description,
+    breaker,
+    spoiled,
+    damagedLabel,
+    quantity,
+    costEa: Number(document.getElementById("costEa").value || 0),
+    totalCost: Number(document.getElementById("totalCost").value || 0),
+    salesRep: document.getElementById("breakerSalesRep").value,
+    vendor: document.getElementById("breakerVendor").value
+  };
+
+  try {
+    showMessage("breakerMessage", "Saving breaker entry...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveBreakerEntry",
+        entry
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("breakerMessage", result.message, "success");
+      clearBreakerForm();
+    } else {
+      showMessage("breakerMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("breakerMessage", "Could not save breaker entry.", "error");
+  }
+}
+
+function clearBreakerForm() {
+  selectedBreakerItem = null;
+
+  document.getElementById("breakerSearch").value = "";
+  document.getElementById("selectedBreakerProduct").textContent = "";
+  document.getElementById("breakerQty").value = 0;
+  document.getElementById("spoiledQty").value = 0;
+  document.getElementById("damagedLabelQty").value = 0;
+  document.getElementById("breakerQuantity").value = "";
+  document.getElementById("costEa").value = "";
+  document.getElementById("totalCost").value = "";
+  document.getElementById("breakerSalesRep").value = "";
+  document.getElementById("breakerVendor").value = "";
 }
   
 </script>
