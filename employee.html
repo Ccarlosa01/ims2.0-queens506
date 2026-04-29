@@ -262,6 +262,22 @@
 
       <h2>Logged Broken Products</h2>
       <div id="breakersSummary" class="breakers-summary">Total Broken Products: 0 | Total Cost: $0.00</div>
+
+      <div class="row">
+        <div>
+          <label for="breakerVendorFilter">Filter by Vendor</label>
+          <select id="breakerVendorFilter" onchange="renderBreakersTable()">
+            <option value="">All Vendors</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="breakerRepFilter">Filter by Sales Rep</label>
+          <select id="breakerRepFilter" onchange="renderBreakersTable()">
+            <option value="">All Sales Reps</option>
+          </select>
+        </div>
+      </div>
       
       <button class="secondary" onclick="loadBreakers()">Refresh Breakers Log</button>
       <button class="primary" onclick="downloadBreakersExcel()">Download to Excel</button>
@@ -279,10 +295,11 @@
             <th>Total Cost</th>
             <th>Sales Rep</th>
             <th>Vendor</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="breakersTableBody">
-          <tr><td colspan="10">No breaker entries loaded yet.</td></tr>
+          <tr><td colspan="11">No breaker entries loaded yet.</td></tr>
         </tbody>
       </table>
     </div>
@@ -312,7 +329,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8hhWE5DJYlnjJ-eImjcv3IxMINmjnu2OJckCaMhJvibsXtnkXLtrrJYgn3Mx2521hQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyw8EsXDEM1ju3di939ofz4oe4cXmiiGO6JqUBvEfkqSGyvCyRCFFVpqVZmQRf_DKr8w/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -961,7 +978,9 @@ async function saveBreakerEntry() {
   const quantity = breaker + spoiled + damagedLabel;
 
   if (quantity <= 0) {
-    showMessage("breakerMessage", "Enter at least one quantity.", "error");
+    await deleteBreaker(selectedBreakerItem.itemNo, false);
+    showMessage("breakerMessage", "Entry removed because total is 0.", "success");
+    clearBreakerForm();
     return;
   }
 
@@ -1026,6 +1045,7 @@ async function loadBreakers() {
 
     if (result.success) {
       breakersData = result.breakers || [];
+      populateBreakerFilters();
       renderBreakersTable();
     } else {
       showMessage("breakerMessage", result.message, "error");
@@ -1035,16 +1055,66 @@ async function loadBreakers() {
   }
 }
 
+function populateBreakerFilters() {
+  const vendorFilter = document.getElementById("breakerVendorFilter");
+  const repFilter = document.getElementById("breakerRepFilter");
+
+  if (!vendorFilter || !repFilter) return;
+
+  const currentVendor = vendorFilter.value;
+  const currentRep = repFilter.value;
+
+  const vendors = [...new Set(breakersData.map(row => String(row.vendor || "").trim()).filter(Boolean))].sort();
+  const reps = [...new Set(breakersData.map(row => String(row.salesRep || "").trim()).filter(Boolean))].sort();
+
+  vendorFilter.innerHTML = `<option value="">All Vendors</option>`;
+  repFilter.innerHTML = `<option value="">All Sales Reps</option>`;
+
+  vendors.forEach(vendor => {
+    const option = document.createElement("option");
+    option.value = vendor;
+    option.textContent = vendor;
+    vendorFilter.appendChild(option);
+  });
+
+  reps.forEach(rep => {
+    const option = document.createElement("option");
+    option.value = rep;
+    option.textContent = rep;
+    repFilter.appendChild(option);
+  });
+
+  vendorFilter.value = vendors.includes(currentVendor) ? currentVendor : "";
+  repFilter.value = reps.includes(currentRep) ? currentRep : "";
+}
+
+function getFilteredBreakersData() {
+  const vendorFilter = document.getElementById("breakerVendorFilter")?.value || "";
+  const repFilter = document.getElementById("breakerRepFilter")?.value || "";
+
+  return breakersData.filter(row => {
+    const matchesVendor = !vendorFilter || String(row.vendor || "").trim() === vendorFilter;
+    const matchesRep = !repFilter || String(row.salesRep || "").trim() === repFilter;
+    return matchesVendor && matchesRep;
+  });
+}
+
+function escapeForOnclick(value) {
+  return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
 function renderBreakersTable() {
   const tbody = document.getElementById("breakersTableBody");
   const summary = document.getElementById("breakersSummary");
 
   if (!tbody) return;
 
+  const filteredBreakers = getFilteredBreakersData();
+
   tbody.innerHTML = "";
 
-  if (!breakersData.length) {
-    tbody.innerHTML = `<tr><td colspan="10">No broken products logged yet.</td></tr>`;
+  if (!filteredBreakers.length) {
+    tbody.innerHTML = `<tr><td colspan="11">No broken products found for the selected filters.</td></tr>`;
     if (summary) {
       summary.textContent = "Total Broken Products: 0 | Total Cost: $0.00";
     }
@@ -1054,7 +1124,7 @@ function renderBreakersTable() {
   let totalBrokenProducts = 0;
   let totalBreakerCost = 0;
 
-  breakersData.forEach(row => {
+  filteredBreakers.forEach(row => {
     totalBrokenProducts += Number(row.quantity || 0);
     totalBreakerCost += Number(row.totalCost || 0);
   });
@@ -1064,7 +1134,7 @@ function renderBreakersTable() {
       `Total Broken Products: ${totalBrokenProducts} | Total Cost: $${totalBreakerCost.toFixed(2)}`;
   }
 
-  breakersData.forEach(row => {
+  filteredBreakers.forEach(row => {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
@@ -1078,15 +1148,44 @@ function renderBreakersTable() {
       <td>${Number(row.totalCost || 0).toFixed(2)}</td>
       <td>${row.salesRep || ""}</td>
       <td>${row.vendor || ""}</td>
+      <td><button class="danger" onclick="deleteBreaker('${escapeForOnclick(row.itemNo)}')">Remove</button></td>
     `;
 
     tbody.appendChild(tr);
   });
 }
 
+async function deleteBreaker(itemNo, askConfirm = true) {
+  if (askConfirm && !confirm(`Remove breaker entry for item ${itemNo}?`)) return;
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "deleteBreakerEntry",
+        itemNo
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("breakerMessage", result.message || "Breaker entry removed.", "success");
+      await loadBreakers();
+    } else {
+      showMessage("breakerMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("breakerMessage", "Could not delete breaker entry.", "error");
+  }
+}
+
 function downloadBreakersExcel() {
-  if (!breakersData.length) {
-    showMessage("breakerMessage", "No breaker entries available to download.", "error");
+  const exportData = getFilteredBreakersData();
+
+  if (!exportData.length) {
+    showMessage("breakerMessage", "No breaker entries available to download for the selected filters.", "error");
     return;
   }
 
@@ -1105,7 +1204,7 @@ function downloadBreakersExcel() {
     ]
   ];
 
-  breakersData.forEach(row => {
+  exportData.forEach(row => {
     rows.push([
       row.itemNo,
       row.description,
@@ -1131,5 +1230,4 @@ function downloadBreakersExcel() {
 </script>
 </body>
 </html>
-
 
