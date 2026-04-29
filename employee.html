@@ -255,6 +255,33 @@
       <button class="primary" onclick="saveBreakerEntry()">Submit Breaker Entry</button>
   
       <div id="breakerMessage" class="message"></div>
+
+      <hr style="margin:24px 0; border:0; border-top:1px solid #ddd;">
+
+      <h2>Logged Broken Products</h2>
+      
+      <button class="secondary" onclick="loadBreakers()">Refresh Breakers Log</button>
+      <button class="primary" onclick="downloadBreakersExcel()">Download to Excel</button>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Item No.</th>
+            <th>Description</th>
+            <th>Breaker</th>
+            <th>Spoiled</th>
+            <th>Damaged Label</th>
+            <th>Quantity</th>
+            <th>Cost / EA</th>
+            <th>Total Cost</th>
+            <th>Sales Rep</th>
+            <th>Vendor</th>
+          </tr>
+        </thead>
+        <tbody id="breakersTableBody">
+          <tr><td colspan="10">No breaker entries loaded yet.</td></tr>
+        </tbody>
+      </table>
     </div>
   
   </div>
@@ -282,12 +309,13 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxPJQAvzP6ZJ0Mh5qCuBphTHuzQrEB73GNPMDpw9gcV4u2VDYVg_3YwUXgZwINrjLuW5w/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxS8hhWE5DJYlnjJ-eImjcv3IxMINmjnu2OJckCaMhJvibsXtnkXLtrrJYgn3Mx2521hQ/exec";
 
 let currentUser = null;
 let inventory = [];
 let batchEntries = [];
 let allPalletData = [];
+let breakersData = [];
 let maxPallets = 0;
 
 window.onload = async function () {
@@ -314,6 +342,7 @@ window.onload = async function () {
 
   await loadMaxPallets();
   await loadInventory();
+  await loadBreakers();
 };
 
 function showTab(tabId, btn) {
@@ -336,6 +365,10 @@ function showTab(tabId, btn) {
 
   if (tabId === "catalog") {
     loadAllPallets();
+  }
+
+  if (tabId === "breakers") {
+    loadBreakers();
   }
 }
 
@@ -880,6 +913,23 @@ function selectBreakerProduct(item) {
   document.getElementById("breakerSalesRep").value = item.salesRep || "";
   document.getElementById("breakerVendor").value = item.vendor || "";
 
+  const previousLog = breakersData.find(row =>
+    String(row.itemNo).trim() === String(item.itemNo).trim()
+  );
+
+  if (previousLog) {
+    document.getElementById("breakerQty").value = Number(previousLog.breaker || 0);
+    document.getElementById("spoiledQty").value = Number(previousLog.spoiled || 0);
+    document.getElementById("damagedLabelQty").value = Number(previousLog.damagedLabel || 0);
+
+    showMessage("breakerMessage", "Previous breaker log found and auto-populated.", "success");
+  } else {
+    document.getElementById("breakerQty").value = 0;
+    document.getElementById("spoiledQty").value = 0;
+    document.getElementById("damagedLabelQty").value = 0;
+    showMessage("breakerMessage", "", "");
+  }
+
   calculateBreakerTotals();
 }
 
@@ -940,6 +990,7 @@ async function saveBreakerEntry() {
 
     if (result.success) {
       showMessage("breakerMessage", result.message, "success");
+      await loadBreakers();
       clearBreakerForm();
     } else {
       showMessage("breakerMessage", result.message, "error");
@@ -963,6 +1014,98 @@ function clearBreakerForm() {
   document.getElementById("totalCost").value = "";
   document.getElementById("breakerSalesRep").value = "";
   document.getElementById("breakerVendor").value = "";
+}
+
+async function loadBreakers() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getBreakers`);
+    const result = await response.json();
+
+    if (result.success) {
+      breakersData = result.breakers || [];
+      renderBreakersTable();
+    } else {
+      showMessage("breakerMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("breakerMessage", "Could not load breakers log.", "error");
+  }
+}
+
+function renderBreakersTable() {
+  const tbody = document.getElementById("breakersTableBody");
+
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (!breakersData.length) {
+    tbody.innerHTML = `<tr><td colspan="10">No broken products logged yet.</td></tr>`;
+    return;
+  }
+
+  breakersData.forEach(row => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${row.itemNo}</td>
+      <td>${row.description}</td>
+      <td>${row.breaker}</td>
+      <td>${row.spoiled}</td>
+      <td>${row.damagedLabel}</td>
+      <td>${row.quantity}</td>
+      <td>${row.costEa}</td>
+      <td>${Number(row.totalCost || 0).toFixed(2)}</td>
+      <td>${row.salesRep || ""}</td>
+      <td>${row.vendor || ""}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+}
+
+function downloadBreakersExcel() {
+  if (!breakersData.length) {
+    showMessage("breakerMessage", "No breaker entries available to download.", "error");
+    return;
+  }
+
+  const rows = [
+    [
+      "ITEM NO.",
+      "DESCRIPTION",
+      "BREAKER",
+      "SPOILED",
+      "DAMAGED LABEL",
+      "QUANTITY",
+      "COST / EA",
+      "TOTAL COST",
+      "SALES REP",
+      "VENDOR"
+    ]
+  ];
+
+  breakersData.forEach(row => {
+    rows.push([
+      row.itemNo,
+      row.description,
+      Number(row.breaker || 0),
+      Number(row.spoiled || 0),
+      Number(row.damagedLabel || 0),
+      Number(row.quantity || 0),
+      Number(row.costEa || 0),
+      Number(row.totalCost || 0),
+      row.salesRep || "",
+      row.vendor || ""
+    ]);
+  });
+
+  const worksheet = XLSX.utils.aoa_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Breakers");
+
+  XLSX.writeFile(workbook, "breakers-log.xlsx");
 }
   
 </script>
