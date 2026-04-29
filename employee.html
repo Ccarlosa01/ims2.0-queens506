@@ -37,6 +37,8 @@
     .tab-btn.active { background:#1f5eff; color:white; }
     .tab-section { display:none; }
     .tab-section.active { display:block; }
+    .readonly-field { background:#f1f1f1; color:#555; cursor:not-allowed; }
+    .breakers-summary { margin-top:14px; padding:14px; border-radius:10px; background:#ffe5e5; color:#b00020; font-weight:bold; }
 
     @media (max-width: 800px) {
       .row { grid-template-columns:1fr; }
@@ -224,31 +226,31 @@
   
         <div>
           <label for="breakerQuantity">Quantity</label>
-          <input type="number" id="breakerQuantity" readonly />
+          <input type="number" id="breakerQuantity" readonly class="readonly-field" />
         </div>
       </div>
   
       <div class="row">
         <div>
           <label for="costEa">Cost / EA</label>
-          <input type="number" id="costEa" readonly />
+          <input type="number" id="costEa" readonly class="readonly-field" />
         </div>
   
         <div>
           <label for="totalCost">Total Cost</label>
-          <input type="number" id="totalCost" readonly />
+          <input type="number" id="totalCost" readonly class="readonly-field" />
         </div>
       </div>
   
       <div class="row">
         <div>
           <label for="breakerSalesRep">Sales Rep</label>
-          <input id="breakerSalesRep" readonly />
+          <input id="breakerSalesRep" readonly class="readonly-field" />
         </div>
   
         <div>
           <label for="breakerVendor">Vendor</label>
-          <input id="breakerVendor" readonly />
+          <input id="breakerVendor" readonly class="readonly-field" />
         </div>
       </div>
   
@@ -259,6 +261,7 @@
       <hr style="margin:24px 0; border:0; border-top:1px solid #ddd;">
 
       <h2>Logged Broken Products</h2>
+      <div id="breakersSummary" class="breakers-summary">Total Broken Products: 0 | Total Cost: $0.00</div>
       
       <button class="secondary" onclick="loadBreakers()">Refresh Breakers Log</button>
       <button class="primary" onclick="downloadBreakersExcel()">Download to Excel</button>
@@ -909,7 +912,7 @@ function selectBreakerProduct(item) {
   document.getElementById("selectedBreakerProduct").textContent =
     `Selected: ${item.itemNo} | ${item.description}`;
 
-  document.getElementById("costEa").value = Number(item.costEa || 0);
+  document.getElementById("costEa").value = Number(item.costEa || 0).toFixed(2);
   document.getElementById("breakerSalesRep").value = item.salesRep || "";
   document.getElementById("breakerVendor").value = item.vendor || "";
 
@@ -1034,6 +1037,7 @@ async function loadBreakers() {
 
 function renderBreakersTable() {
   const tbody = document.getElementById("breakersTableBody");
+  const summary = document.getElementById("breakersSummary");
 
   if (!tbody) return;
 
@@ -1041,7 +1045,23 @@ function renderBreakersTable() {
 
   if (!breakersData.length) {
     tbody.innerHTML = `<tr><td colspan="10">No broken products logged yet.</td></tr>`;
+    if (summary) {
+      summary.textContent = "Total Broken Products: 0 | Total Cost: $0.00";
+    }
     return;
+  }
+
+  let totalBrokenProducts = 0;
+  let totalBreakerCost = 0;
+
+  breakersData.forEach(row => {
+    totalBrokenProducts += Number(row.quantity || 0);
+    totalBreakerCost += Number(row.totalCost || 0);
+  });
+
+  if (summary) {
+    summary.textContent =
+      `Total Broken Products: ${totalBrokenProducts} | Total Cost: $${totalBreakerCost.toFixed(2)}`;
   }
 
   breakersData.forEach(row => {
@@ -1054,7 +1074,7 @@ function renderBreakersTable() {
       <td>${row.spoiled}</td>
       <td>${row.damagedLabel}</td>
       <td>${row.quantity}</td>
-      <td>${row.costEa}</td>
+      <td>${Number(row.costEa || 0).toFixed(2)}</td>
       <td>${Number(row.totalCost || 0).toFixed(2)}</td>
       <td>${row.salesRep || ""}</td>
       <td>${row.vendor || ""}</td>
@@ -1111,6 +1131,5 @@ function downloadBreakersExcel() {
 </script>
 </body>
 </html>
-
 
 
