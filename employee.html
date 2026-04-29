@@ -248,6 +248,8 @@ function showTab(tabId, btn) {
     return;
   }
 
+  clearAllMessages();
+
   document.querySelectorAll(".tab-section").forEach(section => {
     section.classList.remove("active");
   });
@@ -737,6 +739,25 @@ function showMessage(id, text, type) {
   el.textContent = text;
   el.className = `message ${type || ""}`;
 }
+
+function clearAllMessages() {
+  const messageIds = [
+    "loadMessage",
+    "saveMessage",
+    "totalsBox",
+    "clearMessage",
+    "inventoryUploadMessage"
+  ];
+
+  messageIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = "";
+      el.className = "message";
+    }
+  });
+}
+  
 </script>
 </body>
 </html>
