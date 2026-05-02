@@ -632,7 +632,9 @@ async function submitBatch() {
     const result = await response.json();
 
     if (result.success) {
-      showMessage("saveMessage", "Full pallet batch saved successfully.", "success");
+      batchEntries = [];
+      renderBatchTable();
+      showMessage("saveMessage", "Full pallet batch saved successfully. Table cleared.", "Success");
       await loadAllPallets();
     } else {
       showMessage("saveMessage", result.message, "error");
@@ -710,7 +712,7 @@ function renderCatalog() {
       <td>${row.totalBottles}</td>
       <td>${row.notes || ""}</td>
       <td>${row.employeeName || ""}</td>
-      <td>${row.timestamp || ""}</td>
+      <td>${formatTimestampEST(row.timestamp)}</td>
     `;
 
     tbody.appendChild(tr);
@@ -1225,6 +1227,26 @@ function downloadBreakersExcel() {
   XLSX.utils.book_append_sheet(workbook, worksheet, "Breakers");
 
   XLSX.writeFile(workbook, "breakers-log.xlsx");
+}
+
+function formatTimestampEST(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }) + " EST";
 }
   
 </script>
