@@ -84,6 +84,23 @@
     .error {
       color: red;
     }
+
+    .secondary-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px;
+      border: none;
+      border-radius: 8px;
+      background: #e9eefc;
+      color: #1f5eff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .secondary-btn:hover {
+      background: #dbe5ff;
+    }
   </style>
 </head>
 
@@ -109,6 +126,7 @@
       <input type="password" id="password" required />
 
       <button type="submit" id="submitBtn">Create User</button>
+      <button type="button" class="secondary-btn" onclick="goHome()">Home</button>
 
       <div id="message" class="message"></div>
     </form>
@@ -161,6 +179,11 @@
       submitBtn.disabled = false;
       submitBtn.textContent = "Create User";
     });
+
+    function goHome() {
+      window.location.href = "index.html";
+    }
+        
   </script>
 </body>
 </html>
