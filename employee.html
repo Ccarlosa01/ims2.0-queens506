@@ -75,6 +75,28 @@
       font-size: 20px;
       font-weight: bold;
     }
+
+    .loading-bar-wrap {
+      display: none;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+    
+    .loading-bar {
+      height: 8px;
+      width: 100%;
+      background: linear-gradient(90deg, #1f5eff, #9bb7ff, #1f5eff);
+      background-size: 200% 100%;
+      border-radius: 999px;
+      animation: loadingMove 1.2s linear infinite;
+      margin-bottom: 6px;
+    }
+    
+    @keyframes loadingMove {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
     
     @media (max-width: 800px) {
       .row { grid-template-columns:1fr; }
@@ -353,9 +375,16 @@
           id="customerName" 
           placeholder="Search or enter name" 
           autocomplete="off"
+          onfocus="showCustomerSuggestions(this.value)"
           oninput="showCustomerSuggestions(this.value)"
+          onblur="handleCustomerBlur()"
         />
         <div id="customerSuggestions" class="order-suggestions"></div>
+      </div>
+
+      <div id="customerLoadingBar" class="loading-bar-wrap">
+        <div class="loading-bar"></div>
+        <span>Retrieving Customers...</span>
       </div>
       <datalist id="customerNameList"></datalist>
   
@@ -1408,7 +1437,11 @@ function formatTimestampEST(value) {
 }
 
 async function loadCustomers() {
+  const loader = document.getElementById("customerLoadingBar");
+
   try {
+    if (loader) loader.style.display = "block";
+
     const res = await fetch(`${SCRIPT_URL}?action=getCustomers`);
     const data = await res.json();
 
@@ -1418,6 +1451,8 @@ async function loadCustomers() {
     }
   } catch {
     showMessage("orderMessage", "Could not load saved customers.", "error");
+  } finally {
+    if (loader) loader.style.display = "none";
   }
 }
 
@@ -1885,20 +1920,21 @@ function printCustomerOrder() {
   printWindow.document.close();
 }
 
-function showCustomerSuggestions(query) {
+function showCustomerSuggestions(query = "") {
   const box = document.getElementById("customerSuggestions");
+  if (!box) return;
+
   box.innerHTML = "";
 
-  query = query.toLowerCase().trim();
-
-  if (!query) {
-    box.style.display = "none";
-    return;
-  }
+  const normalizedQuery = String(query || "").toLowerCase().trim();
 
   const matches = Object.values(customersData)
-    .filter(c => c.name.toLowerCase().includes(query))
-    .slice(0, 10);
+    .filter(c => {
+      if (!normalizedQuery) return true;
+      return String(c.name || "").toLowerCase().includes(normalizedQuery);
+    })
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")))
+    .slice(0, 50);
 
   if (!matches.length) {
     box.style.display = "none";
@@ -1909,13 +1945,16 @@ function showCustomerSuggestions(query) {
     const div = document.createElement("div");
     div.className = "order-suggestion-item";
     div.textContent = customer.name;
-    div.onclick = () => selectCustomer(customer);
+    div.onmousedown = (e) => {
+      e.preventDefault();
+      selectCustomer(customer);
+    };
     box.appendChild(div);
   });
 
   box.style.display = "block";
 }
-
+  
 function selectCustomer(customer) {
   document.getElementById("customerName").value = customer.name;
   document.getElementById("customerSuggestions").style.display = "none";
@@ -1939,6 +1978,22 @@ function selectCustomer(customer) {
   showMessage("orderMessage", "Existing customer loaded.", "success");
 }
 
+function handleCustomerBlur() {
+  setTimeout(() => {
+    const box = document.getElementById("customerSuggestions");
+    if (box) box.style.display = "none";
+
+    const name = document.getElementById("customerName").value.trim();
+    if (!name) return;
+
+    const customer = customersData[name.toLowerCase()];
+
+    if (!customer) {
+      showMessage("orderMessage", "New customer will be created when this order is submitted.", "success");
+    }
+  }, 150);
+}
+  
 </script>
 </body>
 </html>
