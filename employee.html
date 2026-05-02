@@ -348,7 +348,15 @@
       <h2>Customer Order</h2>
   
       <label>Name</label>
-      <input id="customerName" placeholder="Search or enter name" list="customerNameList" onchange="checkCustomerName()" onblur="checkCustomerName()" />
+      <div class="order-search-wrap">
+        <input 
+          id="customerName" 
+          placeholder="Search or enter name" 
+          autocomplete="off"
+          oninput="showCustomerSuggestions(this.value)"
+        />
+        <div id="customerSuggestions" class="order-suggestions"></div>
+      </div>
       <datalist id="customerNameList"></datalist>
   
       <label>Previous Ordered On</label>
@@ -1378,6 +1386,7 @@ document.addEventListener("click", function(e) {
   }
 });
 
+
 function formatTimestampEST(value) {
   if (!value) return "";
 
@@ -1875,7 +1884,61 @@ function printCustomerOrder() {
 
   printWindow.document.close();
 }
-  
+
+function showCustomerSuggestions(query) {
+  const box = document.getElementById("customerSuggestions");
+  box.innerHTML = "";
+
+  query = query.toLowerCase().trim();
+
+  if (!query) {
+    box.style.display = "none";
+    return;
+  }
+
+  const matches = Object.values(customersData)
+    .filter(c => c.name.toLowerCase().includes(query))
+    .slice(0, 10);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(customer => {
+    const div = document.createElement("div");
+    div.className = "order-suggestion-item";
+    div.textContent = customer.name;
+    div.onclick = () => selectCustomer(customer);
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+
+function selectCustomer(customer) {
+  document.getElementById("customerName").value = customer.name;
+  document.getElementById("customerSuggestions").style.display = "none";
+
+  // Autofill fields
+  document.getElementById("prevOrder").value = formatTimestampEST(customer.previousOrderedOn);
+  document.getElementById("phone").value = customer.phone || "";
+  document.getElementById("address").value = customer.address || "";
+  document.getElementById("apartment").value = customer.apartment || "";
+  document.getElementById("zip").value = customer.zip || "";
+  document.getElementById("paymentMethod").value = customer.paymentMethod || "";
+  document.getElementById("cardLast4").value = customer.cardLast4 || "";
+  document.getElementById("paymentStatus").value = customer.paymentStatus || "";
+  document.getElementById("instructions").value = customer.instructions || "";
+
+  // Load previous order items
+  orderItems = Array.isArray(customer.orderItems) ? customer.orderItems : [];
+  renderOrderTable();
+  calculateOrderTotals();
+
+  showMessage("orderMessage", "Existing customer loaded.", "success");
+}
+
 </script>
 </body>
 </html>
