@@ -92,6 +92,19 @@
       animation: loadingMove 1.2s linear infinite;
       margin-bottom: 6px;
     }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .small-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      margin: 0;
+    }
     
     @keyframes loadingMove {
       from { background-position: 200% 0; }
@@ -367,7 +380,10 @@
 
   <div id="customerOrder" class="tab-section">
     <div class="card">
-      <h2>Customer Order</h2>
+      <div class="card-header">
+        <h2>Customer Order</h2>
+        <button class="danger small-btn" onclick="clearCustomerOrder()">Clear</button>
+      </div>
   
       <label>Name</label>
       <div class="order-search-wrap">
@@ -1992,6 +2008,39 @@ function handleCustomerBlur() {
       showMessage("orderMessage", "New customer will be created when this order is submitted.", "success");
     }
   }, 150);
+}
+
+function clearCustomerOrder() {
+  if (!confirm("Clear all customer order data?")) return;
+
+  // Reset text fields
+  document.getElementById("customerName").value = "";
+  document.getElementById("prevOrder").value = "";
+  document.getElementById("phone").value = "";
+  document.getElementById("address").value = "";
+  document.getElementById("apartment").value = "";
+  document.getElementById("zip").value = "";
+  document.getElementById("paymentMethod").value = "";
+  document.getElementById("cardLast4").value = "";
+  document.getElementById("paymentStatus").value = "";
+  document.getElementById("instructions").value = "";
+
+  // Reset order items
+  orderItems = [];
+  renderOrderTable();
+
+  // Reset totals
+  document.getElementById("subtotal").textContent = "0.00";
+  document.getElementById("tax").textContent = "0.00";
+  document.getElementById("taxExemptAmount").textContent = "0.00";
+  document.getElementById("grandTotal").textContent = "0.00";
+
+  // Reset checkboxes
+  document.getElementById("delivery").checked = true;
+  document.getElementById("taxExempt").checked = false;
+
+  // Clear messages
+  showMessage("orderMessage", "Order cleared.", "success");
 }
   
 </script>
