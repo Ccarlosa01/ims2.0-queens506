@@ -44,6 +44,38 @@
     .order-suggestion-item { padding:10px; cursor:pointer; border-bottom:1px solid #eee; }
     .order-suggestion-item:hover { background:#f0f4ff; }
 
+    /* ===== Customer Order Totals Styling ===== */
+    .totals-box {
+      max-width: 420px;
+      margin-top: 10px;
+    }
+    
+    .total-line,
+    .grand-total-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 16px;
+    }
+    
+    .checkbox-line input {
+      width: auto;
+      margin: 0;
+      transform: scale(1.15);
+    }
+    
+    .grand-total-line {
+      margin-top: 8px;
+      padding-top: 14px;
+      border-top: 2px solid #222;
+      border-bottom: none;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    
     @media (max-width: 800px) {
       .row { grid-template-columns:1fr; }
       header { display:block; }
@@ -370,25 +402,39 @@
   
     <div class="card">
       <h3>Totals</h3>
-  
-      <div>Subtotal: $<span id="subtotal">0.00</span></div>
-  
-      <label>
-        <input type="checkbox" id="delivery" checked onchange="calculateOrderTotals()" />
-        Delivery ($10)
-      </label>
-  
-      <div>Tax: $<span id="tax">0.00</span></div>
-  
-      <label>
-        <input type="checkbox" id="taxExempt" onchange="calculateOrderTotals()" />
-        Tax Exempt
-      </label>
-
-      <div>Tax Exempt: $<span id="taxExemptAmount">0.00</span></div>
-  
-      <div><strong>Total: $<span id="grandTotal">0.00</span></strong></div>
-  
+    
+      <div class="totals-box">
+        <div class="total-line">
+          <span>Subtotal</span>
+          <strong>$<span id="subtotal">0.00</span></strong>
+        </div>
+    
+        <label class="total-line checkbox-line">
+          <span>Delivery ($10)</span>
+          <input type="checkbox" id="delivery" checked onchange="calculateOrderTotals()" />
+        </label>
+    
+        <div class="total-line">
+          <span>Tax</span>
+          <strong>$<span id="tax">0.00</span></strong>
+        </div>
+    
+        <label class="total-line checkbox-line">
+          <span>Tax Exempt</span>
+          <input type="checkbox" id="taxExempt" onchange="calculateOrderTotals()" />
+        </label>
+    
+        <div class="total-line">
+          <span>Tax Exempt Amount</span>
+          <strong>$<span id="taxExemptAmount">0.00</span></strong>
+        </div>
+    
+        <div class="grand-total-line">
+          <span>Total</span>
+          <strong>$<span id="grandTotal">0.00</span></strong>
+        </div>
+      </div>
+    
       <button class="primary" onclick="saveCustomerOrder()">Submit Order</button>
       <div id="orderMessage" class="message"></div>
     </div>
@@ -417,7 +463,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjv1d8rfnGPL6_lrWrocLr3xzv7WblIrkmDne9kP_4ffYSqjrOjTPFu8XGo5n9Xbbttw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwl5yit1sEEUaRYBuTiC9DkjaNc_dV8vkquaUaJWTj9DDLLud9Y1vjWOPD4s225Ds0AQ/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1410,6 +1456,11 @@ function checkCustomerName() {
     document.getElementById("cardLast4").value = customer.cardLast4 || "";
     document.getElementById("paymentStatus").value = customer.paymentStatus || "";
     document.getElementById("instructions").value = customer.instructions || "";
+  
+    orderItems = Array.isArray(customer.orderItems) ? customer.orderItems : [];
+    renderOrderTable();
+    calculateOrderTotals();
+  
     showMessage("orderMessage", "Existing customer found. Latest order details loaded.", "success");
   } else {
     document.getElementById("prevOrder").value = "";
