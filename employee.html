@@ -436,6 +436,7 @@
       </div>
     
       <button class="primary" onclick="saveCustomerOrder()">Submit Order</button>
+      <button class="secondary" onclick="printCustomerOrder()">Print Order</button>
       <div id="orderMessage" class="message"></div>
     </div>
   
@@ -1707,6 +1708,172 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function printCustomerOrder() {
+  const name = document.getElementById("customerName").value || "";
+  const phone = document.getElementById("phone").value || "";
+  const address = document.getElementById("address").value || "";
+  const apartment = document.getElementById("apartment").value || "";
+  const zip = document.getElementById("zip").value || "";
+  const instructions = document.getElementById("instructions").value || "";
+
+  const subtotal = document.getElementById("subtotal").textContent;
+  const delivery = document.getElementById("delivery").checked ? "10.00" : "0.00";
+  const tax = document.getElementById("tax").textContent;
+  const taxExempt = document.getElementById("taxExemptAmount").textContent;
+  const total = document.getElementById("grandTotal").textContent;
+
+  let itemRows = "";
+
+  orderItems.forEach(item => {
+    const lineTotal = Number(item.price || 0) * Number(item.qty || 0);
+
+    itemRows += `
+      <tr>
+        <td>${item.itemNo || ""}</td>
+        <td>${item.description || ""}</td>
+        <td>$${Number(item.price || 0).toFixed(2)}</td>
+        <td>${item.qty || 0}</td>
+        <td>$${lineTotal.toFixed(2)}</td>
+      </tr>
+    `;
+  });
+
+  const printWindow = window.open("", "_blank");
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Customer Order</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            color: #111;
+          }
+
+          h1 {
+            margin-bottom: 10px;
+          }
+
+          .section {
+            margin-bottom: 24px;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+          }
+
+          th, td {
+            border-bottom: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 14px;
+          }
+
+          th {
+            background: #f4f4f4;
+          }
+
+          .totals {
+            max-width: 350px;
+            margin-left: auto;
+            margin-top: 20px;
+          }
+
+          .total-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+          }
+
+          .grand-total {
+            font-size: 18px;
+            font-weight: bold;
+            border-top: 2px solid #111;
+            margin-top: 8px;
+            padding-top: 10px;
+          }
+
+          @media print {
+            button {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+
+      <body>
+        <h1>Customer Order</h1>
+
+        <div class="section">
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Phone Number:</strong> ${phone}</p>
+          <p><strong>Address:</strong> ${address}</p>
+          <p><strong>Apartment:</strong> ${apartment}</p>
+          <p><strong>Zip Code:</strong> ${zip}</p>
+          <p><strong>Special Instructions:</strong> ${instructions}</p>
+        </div>
+
+        <div class="section">
+          <h2>Ordered Items</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Item No.</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows || `<tr><td colspan="5">No items added.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="totals">
+          <div class="total-line">
+            <span>Subtotal</span>
+            <strong>$${subtotal}</strong>
+          </div>
+
+          <div class="total-line">
+            <span>Delivery</span>
+            <strong>$${delivery}</strong>
+          </div>
+
+          <div class="total-line">
+            <span>Tax</span>
+            <strong>$${tax}</strong>
+          </div>
+
+          <div class="total-line">
+            <span>Tax Exempt</span>
+            <strong>$${taxExempt}</strong>
+          </div>
+
+          <div class="total-line grand-total">
+            <span>Total</span>
+            <strong>$${total}</strong>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        <\/script>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
 }
   
 </script>
