@@ -65,6 +65,7 @@
     <button class="tab-btn" onclick="showTab('catalog', this)">Catalog View</button>
     <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
     <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
+    <button class="tab-btn" onclick="showTab('customerOrder', this)">Customer Order</button>
 
     <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
       Inventory Upload
@@ -306,7 +307,90 @@
   
   </div>
 
+  <div id="customerOrder" class="tab-section">
+    <div class="card">
+      <h2>Customer Order</h2>
   
+      <label>Name</label>
+      <input id="customerName" placeholder="Search or enter name" list="customerNameList" onchange="checkCustomerName()" onblur="checkCustomerName()" />
+      <datalist id="customerNameList"></datalist>
+  
+      <label>Previous Ordered On</label>
+      <input id="prevOrder" class="readonly-field" readonly />
+  
+      <label>Phone Number</label>
+      <input id="phone" />
+  
+      <label>Address</label>
+      <input id="address" />
+  
+      <label>Apartment</label>
+      <input id="apartment" />
+  
+      <label>Zip Code</label>
+      <input id="zip" />
+  
+      <label>Payment Method</label>
+      <input id="paymentMethod" />
+  
+      <label>Card Last 4</label>
+      <input id="cardLast4" />
+  
+      <label>Payment Status</label>
+      <input id="paymentStatus" />
+  
+      <label>Special Instructions</label>
+      <input id="instructions" />
+    </div>
+  
+    <div class="card">
+      <h3>Order Items</h3>
+      <datalist id="inventoryDescriptions"></datalist>
+  
+      <table>
+        <thead>
+          <tr>
+            <th>Item No.</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Quantity</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="orderTable"></tbody>
+      </table>
+  
+      <button class="secondary" onclick="addOrderRow()">Add Product</button>
+    </div>
+  
+    <div class="card">
+      <h3>Totals</h3>
+  
+      <div>Subtotal: $<span id="subtotal">0.00</span></div>
+  
+      <label>
+        <input type="checkbox" id="delivery" checked onchange="calculateOrderTotals()" />
+        Delivery ($10)
+      </label>
+  
+      <div>Tax: $<span id="tax">0.00</span></div>
+  
+      <label>
+        <input type="checkbox" id="taxExempt" onchange="calculateOrderTotals()" />
+        Tax Exempt
+      </label>
+
+      <div>Tax Exempt: $<span id="taxExemptAmount">0.00</span></div>
+  
+      <div><strong>Total: $<span id="grandTotal">0.00</span></strong></div>
+  
+      <button class="primary" onclick="saveCustomerOrder()">Submit Order</button>
+      <div id="orderMessage" class="message"></div>
+    </div>
+  
+  </div>
+    
   <div id="inventoryUpload" class="tab-section">
 
     <div class="card">
@@ -329,7 +413,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyw8EsXDEM1ju3di939ofz4oe4cXmiiGO6JqUBvEfkqSGyvCyRCFFVpqVZmQRf_DKr8w/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY1_G0JQ10BTNfwC0TbsTjjxRF8BGdShjeYAlbbDyaeyi4bvV0yZ0SvmHS5Cgoi_PzQw/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -337,6 +421,8 @@ let batchEntries = [];
 let allPalletData = [];
 let breakersData = [];
 let maxPallets = 0;
+let customersData = {};
+let orderItems = [];
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -363,6 +449,7 @@ window.onload = async function () {
   await loadMaxPallets();
   await loadInventory();
   await loadBreakers();
+  await loadCustomers();
 };
 
 function showTab(tabId, btn) {
@@ -446,6 +533,7 @@ async function loadInventory() {
 
     if (result.success) {
       inventory = result.inventory || [];
+      populateInventoryDatalist();
     } else {
       showMessage("loadMessage", result.message, "error");
     }
@@ -634,7 +722,7 @@ async function submitBatch() {
     if (result.success) {
       batchEntries = [];
       renderBatchTable();
-      showMessage("saveMessage", "Full pallet batch saved successfully. Table cleared.", "Success");
+      showMessage("saveMessage", "Full pallet batch saved successfully. Table cleared.", "success");
       await loadAllPallets();
     } else {
       showMessage("saveMessage", result.message, "error");
@@ -875,7 +963,8 @@ function clearAllMessages() {
     "totalsBox",
     "clearMessage",
     "inventoryUploadMessage",
-    "breakerMessage"
+    "breakerMessage",
+    "orderMessage"
   ];
 
   messageIds.forEach(id => {
@@ -1248,8 +1337,255 @@ function formatTimestampEST(value) {
     hour12: true
   }) + " EST";
 }
+
+async function loadCustomers() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=getCustomers`);
+    const data = await res.json();
+
+    if (data.success) {
+      customersData = data.customers || {};
+      populateCustomerDatalist();
+    }
+  } catch {
+    showMessage("orderMessage", "Could not load saved customers.", "error");
+  }
+}
+
+function populateCustomerDatalist() {
+  const list = document.getElementById("customerNameList");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  Object.values(customersData).forEach(customer => {
+    const option = document.createElement("option");
+    option.value = customer.name || "";
+    list.appendChild(option);
+  });
+}
+
+function populateInventoryDatalist() {
+  const list = document.getElementById("inventoryDescriptions");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  inventory.forEach(item => {
+    const option = document.createElement("option");
+    option.value = item.description || "";
+    option.label = `${item.itemNo || ""} - ${item.description || ""}`;
+    list.appendChild(option);
+  });
+}
+
+function checkCustomerName() {
+  const nameInput = document.getElementById("customerName");
+  const name = nameInput.value.trim();
+
+  if (!name) return;
+
+  const customer = customersData[name.toLowerCase()];
+
+  if (customer) {
+    document.getElementById("prevOrder").value = formatTimestampEST(customer.previousOrderedOn);
+    document.getElementById("phone").value = customer.phone || "";
+    document.getElementById("address").value = customer.address || "";
+    document.getElementById("apartment").value = customer.apartment || "";
+    document.getElementById("zip").value = customer.zip || "";
+    document.getElementById("paymentMethod").value = customer.paymentMethod || "";
+    document.getElementById("cardLast4").value = customer.cardLast4 || "";
+    document.getElementById("paymentStatus").value = customer.paymentStatus || "";
+    document.getElementById("instructions").value = customer.instructions || "";
+    showMessage("orderMessage", "Existing customer found. Latest order details loaded.", "success");
+  } else {
+    document.getElementById("prevOrder").value = "";
+    showMessage("orderMessage", "New customer will be created when this order is submitted.", "success");
+    alert("New customer will be created.");
+  }
+}
+
+function addOrderRow() {
+  orderItems.push({ itemNo: "", description: "", price: 0, qty: 1 });
+  renderOrderTable();
+}
+
+function renderOrderTable() {
+  const tbody = document.getElementById("orderTable");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  if (!orderItems.length) {
+    tbody.innerHTML = `<tr><td colspan="6">No products added yet.</td></tr>`;
+    calculateOrderTotals();
+    return;
+  }
+
+  orderItems.forEach((item, i) => {
+    const price = Number(item.price || 0);
+    const qty = Number(item.qty || 0);
+    const total = price * qty;
+
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td class="readonly-field">${item.itemNo || ""}</td>
+      <td><input value="${escapeHtml(item.description || "")}" list="inventoryDescriptions" onchange="updateOrderItem(${i}, 'description', this.value)" /></td>
+      <td class="readonly-field">${price.toFixed(2)}</td>
+      <td><input type="number" min="0" value="${qty}" onchange="updateOrderItem(${i}, 'qty', this.value)" /></td>
+      <td class="readonly-field">${total.toFixed(2)}</td>
+      <td><button class="danger" onclick="removeOrderItem(${i})">Remove</button></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  calculateOrderTotals();
+}
+
+function updateOrderItem(i, field, value) {
+  if (!orderItems[i]) return;
+
+  if (field === "qty") {
+    orderItems[i].qty = Number(value || 0);
+  } else if (field === "description") {
+    orderItems[i].description = value;
+
+    const inv = findInventoryByDescription(value);
+
+    if (inv) {
+      orderItems[i].itemNo = inv.itemNo || "";
+      orderItems[i].description = inv.description || value;
+      orderItems[i].price = Number(inv.basePrice || inv.price || inv.base || 0);
+    } else {
+      orderItems[i].itemNo = "";
+      orderItems[i].price = 0;
+    }
+  }
+
+  renderOrderTable();
+}
+
+function findInventoryByDescription(description) {
+  const query = String(description || "").trim().toLowerCase();
+  if (!query) return null;
+
+  return inventory.find(item =>
+    String(item.description || "").trim().toLowerCase() === query
+  ) || null;
+}
+
+function removeOrderItem(i) {
+  orderItems.splice(i, 1);
+  renderOrderTable();
+}
+
+function calculateOrderTotals() {
+  let subtotal = 0;
+
+  orderItems.forEach(item => {
+    subtotal += Number(item.price || 0) * Number(item.qty || 0);
+  });
+
+  const delivery = document.getElementById("delivery")?.checked ? 10 : 0;
+  const tax = (subtotal + delivery) * 0.08875;
+  const taxExemptValue = document.getElementById("taxExempt")?.checked ? -tax : 0;
+  const total = subtotal + delivery + tax + taxExemptValue;
+
+  document.getElementById("subtotal").textContent = subtotal.toFixed(2);
+  document.getElementById("tax").textContent = tax.toFixed(2);
+  document.getElementById("taxExemptAmount").textContent = taxExemptValue.toFixed(2);
+  document.getElementById("grandTotal").textContent = total.toFixed(2);
+}
+
+async function saveCustomerOrder() {
+  const name = document.getElementById("customerName").value.trim();
+
+  if (!name) {
+    showMessage("orderMessage", "Customer name is required.", "error");
+    return;
+  }
+
+  if (!orderItems.length) {
+    showMessage("orderMessage", "Add at least one product to the order.", "error");
+    return;
+  }
+
+  const invalidItem = orderItems.find(item => !item.itemNo || !item.description || Number(item.qty || 0) <= 0);
+
+  if (invalidItem) {
+    showMessage("orderMessage", "Every order line must have a valid product and quantity.", "error");
+    return;
+  }
+
+  const payload = {
+    action: "saveCustomerOrder",
+    name,
+    phone: document.getElementById("phone").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    apartment: document.getElementById("apartment").value.trim(),
+    zip: document.getElementById("zip").value.trim(),
+    paymentMethod: document.getElementById("paymentMethod").value.trim(),
+    cardLast4: document.getElementById("cardLast4").value.trim(),
+    paymentStatus: document.getElementById("paymentStatus").value.trim(),
+    instructions: document.getElementById("instructions").value.trim(),
+    items: orderItems,
+    subtotal: Number(document.getElementById("subtotal").textContent || 0),
+    delivery: document.getElementById("delivery").checked ? 10 : 0,
+    tax: Number(document.getElementById("tax").textContent || 0),
+    taxExempt: Number(document.getElementById("taxExemptAmount").textContent || 0),
+    total: Number(document.getElementById("grandTotal").textContent || 0)
+  };
+
+  try {
+    showMessage("orderMessage", "Saving customer order...", "");
+
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      showMessage("orderMessage", result.message || "Customer order saved successfully.", "success");
+      await loadCustomers();
+      clearCustomerOrderForm();
+    } else {
+      showMessage("orderMessage", result.message || "Could not save customer order.", "error");
+    }
+  } catch {
+    showMessage("orderMessage", "Could not save customer order.", "error");
+  }
+}
+
+function clearCustomerOrderForm() {
+  document.getElementById("customerName").value = "";
+  document.getElementById("prevOrder").value = "";
+  document.getElementById("phone").value = "";
+  document.getElementById("address").value = "";
+  document.getElementById("apartment").value = "";
+  document.getElementById("zip").value = "";
+  document.getElementById("paymentMethod").value = "";
+  document.getElementById("cardLast4").value = "";
+  document.getElementById("paymentStatus").value = "";
+  document.getElementById("instructions").value = "";
+  document.getElementById("delivery").checked = true;
+  document.getElementById("taxExempt").checked = false;
+  orderItems = [];
+  renderOrderTable();
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
   
 </script>
 </body>
 </html>
-
