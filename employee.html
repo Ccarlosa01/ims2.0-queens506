@@ -39,6 +39,10 @@
     .tab-section.active { display:block; }
     .readonly-field { background:#f1f1f1; color:#555; cursor:not-allowed; }
     .breakers-summary { margin-top:14px; padding:14px; border-radius:10px; background:#ffe5e5; color:#b00020; font-weight:bold; }
+    .order-search-wrap { position:relative; width:100%; }
+    .order-suggestions { position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #ccc; border-radius:8px; max-height:220px; overflow-y:auto; display:none; z-index:9999; box-shadow:0 8px 18px rgba(0,0,0,0.12); }
+    .order-suggestion-item { padding:10px; cursor:pointer; border-bottom:1px solid #eee; }
+    .order-suggestion-item:hover { background:#f0f4ff; }
 
     @media (max-width: 800px) {
       .row { grid-template-columns:1fr; }
@@ -413,7 +417,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwY1_G0JQ10BTNfwC0TbsTjjxRF8BGdShjeYAlbbDyaeyi4bvV0yZ0SvmHS5Cgoi_PzQw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzjv1d8rfnGPL6_lrWrocLr3xzv7WblIrkmDne9kP_4ffYSqjrOjTPFu8XGo5n9Xbbttw/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1318,6 +1322,15 @@ function downloadBreakersExcel() {
   XLSX.writeFile(workbook, "breakers-log.xlsx");
 }
 
+
+document.addEventListener("click", function(e) {
+  if (!e.target.closest(".order-search-wrap")) {
+    document.querySelectorAll(".order-suggestions").forEach(box => {
+      box.style.display = "none";
+    });
+  }
+});
+
 function formatTimestampEST(value) {
   if (!value) return "";
 
@@ -1431,7 +1444,12 @@ function renderOrderTable() {
 
     tr.innerHTML = `
       <td class="readonly-field">${item.itemNo || ""}</td>
-      <td><input value="${escapeHtml(item.description || "")}" list="inventoryDescriptions" onchange="updateOrderItem(${i}, 'description', this.value)" /></td>
+      <td>
+        <div class="order-search-wrap">
+          <input value="${escapeHtml(item.description || "")}" oninput="showOrderSuggestions(${i}, this.value)" autocomplete="off" />
+          <div id="orderSuggestions-${i}" class="order-suggestions"></div>
+        </div>
+      </td>
       <td class="readonly-field">${price.toFixed(2)}</td>
       <td><input type="number" min="0" value="${qty}" onchange="updateOrderItem(${i}, 'qty', this.value)" /></td>
       <td class="readonly-field">${total.toFixed(2)}</td>
@@ -1455,14 +1473,68 @@ function updateOrderItem(i, field, value) {
     const inv = findInventoryByDescription(value);
 
     if (inv) {
-      orderItems[i].itemNo = inv.itemNo || "";
-      orderItems[i].description = inv.description || value;
-      orderItems[i].price = Number(inv.basePrice || inv.price || inv.base || 0);
+      selectOrderProduct(i, inv);
+      return;
     } else {
       orderItems[i].itemNo = "";
       orderItems[i].price = 0;
     }
   }
+
+  renderOrderTable();
+}
+
+function showOrderSuggestions(index, query) {
+  if (!orderItems[index]) return;
+
+  orderItems[index].description = query;
+
+  const box = document.getElementById(`orderSuggestions-${index}`);
+  if (!box) return;
+
+  box.innerHTML = "";
+
+  const cleanQuery = String(query || "").toLowerCase().trim();
+
+  if (!cleanQuery) {
+    orderItems[index].itemNo = "";
+    orderItems[index].price = 0;
+    box.style.display = "none";
+    renderOrderTable();
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.description || "").toLowerCase().includes(cleanQuery) ||
+    String(item.itemNo || "").toLowerCase().includes(cleanQuery)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    orderItems[index].itemNo = "";
+    orderItems[index].price = 0;
+    box.style.display = "none";
+    calculateOrderTotals();
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "order-suggestion-item";
+    div.textContent = `${item.itemNo || ""} - ${item.description || ""}`;
+    div.onclick = () => selectOrderProduct(index, item);
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+
+function selectOrderProduct(index, item) {
+  if (!orderItems[index]) return;
+
+  orderItems[index].itemNo = item.itemNo || "";
+  orderItems[index].description = item.description || "";
+  orderItems[index].price = Number(item.basePrice || item.price || item.base || item["Base Price"] || 0);
+  orderItems[index].qty = Number(orderItems[index].qty || 1);
 
   renderOrderTable();
 }
