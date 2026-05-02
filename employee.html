@@ -207,6 +207,10 @@
       <p class="muted">View what is on pallets, search products, filter by pallet, and view totals.</p>
 
       <button class="secondary" onclick="loadAllPallets()">Refresh Catalog</button>
+      <div id="catalogLoadingBar" class="loading-bar-wrap">
+        <div class="loading-bar"></div>
+        <span>Retrieving Pallet Catalog...</span>
+      </div>
 
       <div class="row">
         <div>
@@ -837,7 +841,11 @@ async function submitBatch() {
 }
 
 async function loadAllPallets() {
+  const loader = document.getElementById("catalogLoadingBar");
+
   try {
+    if (loader) loader.style.display = "block";
+
     const response = await fetch(`${SCRIPT_URL}?action=getAllPallets`);
     const result = await response.json();
 
@@ -849,6 +857,8 @@ async function loadAllPallets() {
     }
   } catch {
     showMessage("totalsBox", "Could not load pallet catalog.", "error");
+  } finally {
+    if (loader) loader.style.display = "none";
   }
 }
 
