@@ -137,6 +137,7 @@
     <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
     <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
     <button class="tab-btn" onclick="showTab('customerOrder', this)">Customer Order</button>
+    <button class="tab-btn" onclick="showTab('inventoryEntry', this)">Inventory Entry</button>
 
     <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
       Inventory Upload
@@ -498,7 +499,50 @@
     </div>
   
   </div>
-    
+
+  <div id="inventoryEntry" class="tab-section">
+    <div class="card">
+      <h2>Inventory Entry</h2>
+      <p class="muted">
+        Scan a product barcode to pull the Item No. If no barcode match exists, enter the Item No. manually.
+      </p>
+  
+      <button class="secondary" onclick="startInventoryScanner()">Scan Barcode</button>
+  
+      <div id="inventoryScannerBox" class="card" style="display:none; margin-top:15px;">
+        <h3>Scan Barcode</h3>
+        <video id="inventoryScannerPreview" style="width:100%; max-width:420px; border-radius:10px;"></video>
+        <button class="danger" onclick="stopInventoryScanner()">Stop Scanner</button>
+        <div id="inventoryScannerMessage" class="message"></div>
+      </div>
+  
+      <label for="inventoryEntryItemNo">Item No.</label>
+      <input id="inventoryEntryItemNo" placeholder="Scan barcode or type item no." />
+  
+      <div id="inventoryEntryProductInfo" class="message"></div>
+  
+      <div class="row">
+        <div>
+          <label for="floorCount">Floor</label>
+          <input type="number" id="floorCount" min="0" value="0" />
+        </div>
+  
+        <div>
+          <label for="steelCount">Steel</label>
+          <input type="number" id="steelCount" min="0" value="0" />
+        </div>
+      </div>
+  
+      <label for="behindSteelCount">Behind Steel</label>
+      <input type="number" id="behindSteelCount" min="0" value="0" />
+  
+      <button class="primary" onclick="submitInventoryEntry()">Submit Inventory Entry</button>
+  
+      <div id="inventoryEntryMessage" class="message"></div>
+    </div>
+  
+  </div>
+  
   <div id="inventoryUpload" class="tab-section">
 
     <div class="card">
@@ -519,9 +563,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwl5yit1sEEUaRYBuTiC9DkjaNc_dV8vkquaUaJWTj9DDLLud9Y1vjWOPD4s225Ds0AQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzksQ4LUcvEGUKtKQbQJj3WmujIu8g49BH6dFBlA5VZkQERoKZrNZ-gZuV1QZxNlQZZqQ/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -531,6 +576,8 @@ let breakersData = [];
 let maxPallets = 0;
 let customersData = {};
 let orderItems = [];
+let barcodeData = [];
+let inventoryEntryScanner = null;
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -558,6 +605,7 @@ window.onload = async function () {
   await loadInventory();
   await loadBreakers();
   await loadCustomers();
+  await loadBarcodes();
 };
 
 function showTab(tabId, btn) {
@@ -1078,7 +1126,10 @@ function clearAllMessages() {
     "clearMessage",
     "inventoryUploadMessage",
     "breakerMessage",
-    "orderMessage"
+    "orderMessage",
+    "inventoryEntryMessage",
+    "inventoryEntryProductInfo",
+    "inventoryScannerMessage"
   ];
 
   messageIds.forEach(id => {
@@ -2051,6 +2102,142 @@ function clearCustomerOrder() {
 
   // Clear messages
   showMessage("orderMessage", "Order cleared.", "success");
+}
+
+async function loadBarcodes() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getBarcodes`);
+    const result = await response.json();
+
+    if (result.success) {
+      barcodeData = result.barcodes || [];
+    } else {
+      showMessage("inventoryEntryMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("inventoryEntryMessage", "Could not load barcode data.", "error");
+  }
+}
+
+async function startInventoryScanner() {
+  const box = document.getElementById("inventoryScannerBox");
+
+  box.style.display = "block";
+  showMessage("inventoryScannerMessage", "Starting camera...", "");
+
+  try {
+    inventoryEntryScanner = new ZXing.BrowserMultiFormatReader();
+
+    const devices = await inventoryEntryScanner.listVideoInputDevices();
+
+    if (!devices.length) {
+      showMessage("inventoryScannerMessage", "No camera found.", "error");
+      return;
+    }
+
+    const backCamera = devices.find(device =>
+      device.label.toLowerCase().includes("back") ||
+      device.label.toLowerCase().includes("rear")
+    ) || devices[0];
+
+    inventoryEntryScanner.decodeFromVideoDevice(
+      backCamera.deviceId,
+      "inventoryScannerPreview",
+      (result, err) => {
+        if (result) {
+          handleInventoryBarcode(result.text);
+          stopInventoryScanner();
+        }
+      }
+    );
+
+    showMessage("inventoryScannerMessage", "Camera ready. Point at the barcode.", "success");
+
+  } catch {
+    showMessage("inventoryScannerMessage", "Could not start scanner.", "error");
+  }
+}
+
+function stopInventoryScanner() {
+  if (inventoryEntryScanner) {
+    inventoryEntryScanner.reset();
+    inventoryEntryScanner = null;
+  }
+
+  document.getElementById("inventoryScannerBox").style.display = "none";
+}
+
+function handleInventoryBarcode(scannedCode) {
+  const code = String(scannedCode || "").trim();
+
+  const barcodeMatch = barcodeData.find(row =>
+    String(row.barcode || "").trim() === code
+  );
+
+  if (!barcodeMatch || !barcodeMatch.itemNo) {
+    document.getElementById("inventoryEntryItemNo").value = "";
+    showMessage(
+      "inventoryEntryProductInfo",
+      `No Item No. found for barcode ${code}. Please enter Item No. manually.`,
+      "error"
+    );
+    return;
+  }
+
+  document.getElementById("inventoryEntryItemNo").value = barcodeMatch.itemNo;
+
+  showMessage(
+    "inventoryEntryProductInfo",
+    `Matched: ${barcodeMatch.itemNo} - ${barcodeMatch.description || ""}`,
+    "success"
+  );
+}
+
+async function submitInventoryEntry() {
+  const itemNo = document.getElementById("inventoryEntryItemNo").value.trim();
+  const floor = Number(document.getElementById("floorCount").value || 0);
+  const steel = Number(document.getElementById("steelCount").value || 0);
+  const behindSteel = Number(document.getElementById("behindSteelCount").value || 0);
+
+  if (!itemNo) {
+    showMessage("inventoryEntryMessage", "Item No. is required.", "error");
+    return;
+  }
+
+  try {
+    showMessage("inventoryEntryMessage", "Saving inventory entry...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveInventoryEntry",
+        itemNo,
+        floor,
+        steel,
+        behindSteel
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("inventoryEntryMessage", result.message, "success");
+      clearInventoryEntryForm();
+    } else {
+      showMessage("inventoryEntryMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryEntryMessage", "Could not save inventory entry.", "error");
+  }
+}
+
+function clearInventoryEntryForm() {
+  document.getElementById("inventoryEntryItemNo").value = "";
+  document.getElementById("floorCount").value = 0;
+  document.getElementById("steelCount").value = 0;
+  document.getElementById("behindSteelCount").value = 0;
+  document.getElementById("inventoryEntryProductInfo").textContent = "";
 }
   
 </script>
