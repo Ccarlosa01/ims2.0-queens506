@@ -605,6 +605,7 @@
   
       <button class="primary" onclick="generateInventoryReport()">Generate Inventory Report</button>
       <button class="secondary" onclick="downloadInventoryReportExcel()">Download Inventory Report Excel</button>
+      <button class="secondary" onclick="sortByCountVariance()">Sort by Count Variance</button>
   
       <div id="inventoryReportMessage" class="message"></div>
   
@@ -625,7 +626,7 @@
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyI8_mY_e0B_tXhogJeRP-Urfs09xRByGsVXPty57XBHBkPc1YiygWZphgenvYi0HWiJA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLLIUj9rCxM5n-5U1CRQCx7HJdC_qvNFglUyjWKEcobhegVIJ-tyQWRMYOGXl5R_6iIA/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -2432,18 +2433,32 @@ function renderInventoryReportTable() {
 
     row.forEach((cell, index) => {
       const td = document.createElement("td");
+      const header = headers[index];
+      const val = Number(cell || 0);
 
       if (
-        headers[index] === "Avg Cost" ||
-        headers[index] === "Base Price" ||
-        headers[index] === "Gross M" ||
-        headers[index] === "Gross M %"
+        header === "Avg Cost" ||
+        header === "Base Price" ||
+        header === "Gross M" ||
+        header === "Gross M %"
       ) {
-        td.textContent = Number(cell || 0).toFixed(2);
-      } else if (headers[index] === "Cost Variance") {
-        td.textContent = `$${Number(cell || 0).toFixed(2)}`;
+        td.textContent = val.toFixed(2);
+      } else if (header === "Cost Variance") {
+        td.textContent = `$${val.toFixed(2)}`;
       } else {
         td.textContent = cell;
+      }
+
+      if (header === "Count Variance" || header === "Cost Variance") {
+        if (val > 0) {
+          td.style.background = "#e6f7ec";
+          td.style.color = "#0a7a2f";
+          td.style.fontWeight = "bold";
+        } else if (val < 0) {
+          td.style.background = "#fdeaea";
+          td.style.color = "#b00020";
+          td.style.fontWeight = "bold";
+        }
       }
 
       tr.appendChild(td);
@@ -2452,7 +2467,7 @@ function renderInventoryReportTable() {
     body.appendChild(tr);
   });
 }
-
+  
 function downloadInventoryReportExcel() {
   if (!inventoryReportData.length) {
     showMessage("inventoryReportMessage", "Generate the report first before downloading.", "error");
@@ -2464,6 +2479,26 @@ function downloadInventoryReportExcel() {
 
   XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory Report");
   XLSX.writeFile(workbook, "inventory-report.xlsx");
+}
+
+let sortAscending = true;
+
+function sortByCountVariance() {
+  if (!inventoryReportData.length) return;
+
+  const headers = inventoryReportData[0];
+  const index = headers.indexOf("Count Variance");
+
+  const sortedRows = inventoryReportData.slice(1).sort((a, b) => {
+    return sortAscending
+      ? Number(a[index] || 0) - Number(b[index] || 0)
+      : Number(b[index] || 0) - Number(a[index] || 0);
+  });
+
+  sortAscending = !sortAscending;
+
+  inventoryReportData = [headers, ...sortedRows];
+  renderInventoryReportTable();
 }
   
 </script>
