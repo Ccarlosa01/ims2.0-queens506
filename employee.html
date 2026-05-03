@@ -142,6 +142,10 @@
     <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
       Inventory Upload
     </button>
+
+    <button id="inventoryReportTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryReport', this)" style="display:none;">
+      Inventory Report
+    </button>
   </div>
 
   <div id="workbench" class="tab-section active">
@@ -574,13 +578,34 @@
 
   </div>
 
+  <div id="inventoryReport" class="tab-section">
+    <div class="card">
+      <h2>Inventory Report</h2>
+      <p class="muted">
+        Manager-only report. This generates totals from Inventory, Pallets, Breakers, and Inventory Entry.
+      </p>
+  
+      <button class="primary" onclick="generateInventoryReport()">Generate Inventory Report</button>
+      <button class="secondary" onclick="downloadInventoryReportExcel()">Download Inventory Report Excel</button>
+  
+      <div id="inventoryReportMessage" class="message"></div>
+  
+      <table>
+        <thead id="inventoryReportHead"></thead>
+        <tbody id="inventoryReportBody">
+          <tr><td>No report generated yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRCP8Pim0W-jOMFLhn5H3Cy0y5nfeTmN3eqEyxngUqjxcGUWEK3dh8KFhBG0I_7M7S8g/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIMI-OATvg0c71udJz0E95YjqYYFo-GUjtLZCpXchNhKiyGoxQDlvfJRZV-WYMZQoOMg/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -592,6 +617,7 @@ let customersData = {};
 let orderItems = [];
 let barcodeData = [];
 let inventoryEntryScanner = null;
+let inventoryReportData = [];
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -610,6 +636,7 @@ window.onload = async function () {
 
   if (currentUser.role === "Manager") {
     document.getElementById("inventoryUploadTabBtn").style.display = "inline-block";
+    document.getElementById("inventoryReportTabBtn").style.display = "inline-block";
   }
 
   document.getElementById("userInfo").textContent =
@@ -624,6 +651,10 @@ window.onload = async function () {
 
 function showTab(tabId, btn) {
   if (tabId === "inventoryUpload" && currentUser.role !== "Manager") {
+    return;
+  }
+
+  if (tabId === "inventoryReport" && currentUser.role !== "Manager") {
     return;
   }
 
@@ -1144,7 +1175,8 @@ function clearAllMessages() {
     "inventoryEntryMessage",
     "inventoryEntryProductInfo",
     "inventoryScannerMessage",
-    "barcodeUploadMessage"
+    "barcodeUploadMessage",
+    "inventoryReportMessage"
   ];
 
   messageIds.forEach(id => {
@@ -2316,6 +2348,97 @@ async function uploadBarcodeFile() {
   } catch {
     showMessage("barcodeUploadMessage", "Could not upload barcode file.", "error");
   }
+}
+
+async function generateInventoryReport() {
+  if (currentUser.role !== "Manager") {
+    showMessage("inventoryReportMessage", "Only managers can generate this report.", "error");
+    return;
+  }
+
+  try {
+    showMessage("inventoryReportMessage", "Generating inventory report...", "");
+
+    const response = await fetch(`${SCRIPT_URL}?action=generateInventoryReport`);
+    const result = await response.json();
+
+    if (result.success) {
+      inventoryReportData = result.report || [];
+      renderInventoryReportTable();
+      showMessage("inventoryReportMessage", result.message, "success");
+    } else {
+      showMessage("inventoryReportMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryReportMessage", "Could not generate inventory report.", "error");
+  }
+}
+
+function renderInventoryReportTable() {
+  const head = document.getElementById("inventoryReportHead");
+  const body = document.getElementById("inventoryReportBody");
+
+  if (!head || !body) return;
+
+  head.innerHTML = "";
+  body.innerHTML = "";
+
+  if (!inventoryReportData.length) {
+    body.innerHTML = `<tr><td>No report generated yet.</td></tr>`;
+    return;
+  }
+
+  const headers = inventoryReportData[0];
+  const rows = inventoryReportData.slice(1);
+
+  const headerRow = document.createElement("tr");
+
+  headers.forEach(header => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    headerRow.appendChild(th);
+  });
+
+  head.appendChild(headerRow);
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${headers.length}">No inventory report rows found.</td></tr>`;
+    return;
+  }
+
+  rows.slice(0, 250).forEach(row => {
+    const tr = document.createElement("tr");
+
+    row.forEach((cell, index) => {
+      const td = document.createElement("td");
+
+      if (headers[index] === "Total Cost") {
+        td.textContent = `$${Number(cell || 0).toFixed(2)}`;
+      } else if (headers[index] === "Avg Cost" || headers[index] === "Base Price") {
+        td.textContent = Number(cell || 0).toFixed(2);
+      } else {
+        td.textContent = cell;
+      }
+
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+}
+
+function downloadInventoryReportExcel() {
+  if (!inventoryReportData.length) {
+    showMessage("inventoryReportMessage", "Generate the report first before downloading.", "error");
+    return;
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet(inventoryReportData);
+  const workbook = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory Report");
+  XLSX.writeFile(workbook, "inventory-report.xlsx");
 }
   
 </script>
