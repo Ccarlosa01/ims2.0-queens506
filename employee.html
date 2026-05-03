@@ -105,6 +105,24 @@
       font-size: 13px;
       margin: 0;
     }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 18px;
+      border: 1px solid #eee;
+      border-radius: 10px;
+    }
+    
+    .wide-table {
+      min-width: 1600px;
+      margin-top: 0;
+    }
+    
+    .wide-table th,
+    .wide-table td {
+      white-space: normal;
+    }
     
     @keyframes loadingMove {
       from { background-position: 200% 0; }
@@ -590,12 +608,14 @@
   
       <div id="inventoryReportMessage" class="message"></div>
   
-      <table>
-        <thead id="inventoryReportHead"></thead>
-        <tbody id="inventoryReportBody">
-          <tr><td>No report generated yet.</td></tr>
-        </tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="wide-table">
+          <thead id="inventoryReportHead"></thead>
+          <tbody id="inventoryReportBody">
+            <tr><td>No report generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   
   </div>
@@ -605,7 +625,7 @@
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIMI-OATvg0c71udJz0E95YjqYYFo-GUjtLZCpXchNhKiyGoxQDlvfJRZV-WYMZQoOMg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyI8_mY_e0B_tXhogJeRP-Urfs09xRByGsVXPty57XBHBkPc1YiygWZphgenvYi0HWiJA/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -2413,10 +2433,15 @@ function renderInventoryReportTable() {
     row.forEach((cell, index) => {
       const td = document.createElement("td");
 
-      if (headers[index] === "Total Cost") {
-        td.textContent = `$${Number(cell || 0).toFixed(2)}`;
-      } else if (headers[index] === "Avg Cost" || headers[index] === "Base Price") {
+      if (
+        headers[index] === "Avg Cost" ||
+        headers[index] === "Base Price" ||
+        headers[index] === "Gross M" ||
+        headers[index] === "Gross M %"
+      ) {
         td.textContent = Number(cell || 0).toFixed(2);
+      } else if (headers[index] === "Cost Variance") {
+        td.textContent = `$${Number(cell || 0).toFixed(2)}`;
       } else {
         td.textContent = cell;
       }
