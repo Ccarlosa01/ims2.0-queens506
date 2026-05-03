@@ -559,6 +559,9 @@
       <input type="number" id="behindSteelCount" min="0" value="0" />
   
       <button class="primary" onclick="submitInventoryEntry()">Submit Inventory Entry</button>
+      <button class="danger manager-only" onclick="clearInventoryEntries()" style="display:none;">
+        Clear All Entries
+      </button>
   
       <div id="inventoryEntryMessage" class="message"></div>
     </div>
@@ -627,7 +630,7 @@
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLLIUj9rCxM5n-5U1CRQCx7HJdC_qvNFglUyjWKEcobhegVIJ-tyQWRMYOGXl5R_6iIA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzgz8o6xGNUPZ_vN2roJcnB5U8biAm-idypupcrJh6Vz6j7DquaScIp-iLfiJrces-gw/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -2562,6 +2565,36 @@ function sortByCountVariance() {
 
   inventoryReportData = [headers, ...sortedRows];
   renderInventoryReportTable();
+}
+
+async function clearInventoryEntries() {
+  if (!confirm("Are you sure you want to clear ALL inventory entries? This cannot be undone.")) {
+    return;
+  }
+
+  try {
+    showMessage("inventoryEntryMessage", "Clearing entries...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "clearInventoryEntries",
+        role: currentUser.role
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("inventoryEntryMessage", result.message, "success");
+      clearInventoryEntryForm();
+    } else {
+      showMessage("inventoryEntryMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("inventoryEntryMessage", "Could not clear entries.", "error");
+  }
 }
   
 </script>
