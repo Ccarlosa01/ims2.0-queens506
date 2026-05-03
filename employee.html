@@ -558,6 +558,20 @@
       <div id="inventoryUploadMessage" class="message"></div>
     </div>
 
+    <div class="card">
+      <h2>Barcode Upload</h2>
+      <p class="muted">
+        Manager-only tool. Upload a barcode .xlsx file with headers:
+        plu_number, Description, barcode, store.
+      </p>
+    
+      <input type="file" id="barcodeFile" accept=".xlsx,.xls,.csv" />
+    
+      <button class="primary" onclick="uploadBarcodeFile()">Upload Barcodes</button>
+    
+      <div id="barcodeUploadMessage" class="message"></div>
+    </div>
+
   </div>
 
 </div>
@@ -566,7 +580,7 @@
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzksQ4LUcvEGUKtKQbQJj3WmujIu8g49BH6dFBlA5VZkQERoKZrNZ-gZuV1QZxNlQZZqQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRCP8Pim0W-jOMFLhn5H3Cy0y5nfeTmN3eqEyxngUqjxcGUWEK3dh8KFhBG0I_7M7S8g/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1129,7 +1143,8 @@ function clearAllMessages() {
     "orderMessage",
     "inventoryEntryMessage",
     "inventoryEntryProductInfo",
-    "inventoryScannerMessage"
+    "inventoryScannerMessage",
+    "barcodeUploadMessage"
   ];
 
   messageIds.forEach(id => {
@@ -2238,6 +2253,69 @@ function clearInventoryEntryForm() {
   document.getElementById("steelCount").value = 0;
   document.getElementById("behindSteelCount").value = 0;
   document.getElementById("inventoryEntryProductInfo").textContent = "";
+}
+
+async function uploadBarcodeFile() {
+  const fileInput = document.getElementById("barcodeFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showMessage("barcodeUploadMessage", "Please choose a barcode file first.", "error");
+    return;
+  }
+
+  if (currentUser.role !== "Manager") {
+    showMessage("barcodeUploadMessage", "Only managers can upload barcode files.", "error");
+    return;
+  }
+
+  try {
+    showMessage("barcodeUploadMessage", "Reading barcode file...", "");
+
+    const data = await file.arrayBuffer();
+
+    const workbook = XLSX.read(data, {
+      type: "array"
+    });
+
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    const rows = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: ""
+    });
+
+    if (!rows.length) {
+      showMessage("barcodeUploadMessage", "The uploaded barcode file is empty.", "error");
+      return;
+    }
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "replaceBarcodes",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("barcodeUploadMessage", result.message, "success");
+
+      if (typeof loadBarcodes === "function") {
+        await loadBarcodes();
+      }
+
+      fileInput.value = "";
+    } else {
+      showMessage("barcodeUploadMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("barcodeUploadMessage", "Could not upload barcode file.", "error");
+  }
 }
   
 </script>
