@@ -559,7 +559,7 @@
       <input type="number" id="behindSteelCount" min="0" value="0" />
   
       <button class="primary" onclick="submitInventoryEntry()">Submit Inventory Entry</button>
-      <button class="danger manager-only" onclick="clearInventoryEntries()" style="display:none;">
+      <button id="clearInventoryEntriesBtn" class="danger manager-only" onclick="clearInventoryEntries()" style="display:none;">
         Clear All Entries
       </button>
   
@@ -661,7 +661,13 @@ window.onload = async function () {
 
   if (currentUser.role === "Manager") {
     document.getElementById("inventoryUploadTabBtn").style.display = "inline-block";
-    document.getElementById("inventoryReportTabBtn").style.display = "inline-block";
+  
+    const reportBtn = document.getElementById("inventoryReportTabBtn");
+    if (reportBtn) reportBtn.style.display = "inline-block";
+  
+    document.querySelectorAll(".manager-only").forEach(el => {
+      el.style.display = "inline-block";
+    });
   }
 
   document.getElementById("userInfo").textContent =
