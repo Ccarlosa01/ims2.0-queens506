@@ -624,6 +624,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLLIUj9rCxM5n-5U1CRQCx7HJdC_qvNFglUyjWKEcobhegVIJ-tyQWRMYOGXl5R_6iIA/exec";
@@ -2468,17 +2469,79 @@ function renderInventoryReportTable() {
   });
 }
   
-function downloadInventoryReportExcel() {
+async function downloadInventoryReportExcel() {
   if (!inventoryReportData.length) {
     showMessage("inventoryReportMessage", "Generate the report first before downloading.", "error");
     return;
   }
 
-  const worksheet = XLSX.utils.aoa_to_sheet(inventoryReportData);
-  const workbook = XLSX.utils.book_new();
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Inventory Report");
 
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory Report");
-  XLSX.writeFile(workbook, "inventory-report.xlsx");
+  inventoryReportData.forEach(row => {
+    worksheet.addRow(row);
+  });
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF4F6F8" }
+  };
+
+  const headers = inventoryReportData[0];
+  const countVarianceCol = headers.indexOf("Count Variance") + 1;
+  const costVarianceCol = headers.indexOf("Cost Variance") + 1;
+
+  worksheet.columns.forEach(column => {
+    column.width = 18;
+  });
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    [countVarianceCol, costVarianceCol].forEach(colNumber => {
+      if (colNumber <= 0) return;
+
+      const cell = row.getCell(colNumber);
+      const value = Number(cell.value || 0);
+
+      if (value > 0) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFE6F7EC" }
+        };
+        cell.font = {
+          color: { argb: "FF0A7A2F" },
+          bold: true
+        };
+      } else if (value < 0) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFFDEAEA" }
+        };
+        cell.font = {
+          color: { argb: "FFB00020" },
+          bold: true
+        };
+      }
+    });
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "inventory-report.xlsx";
+  link.click();
+
+  URL.revokeObjectURL(link.href);
 }
 
 let sortAscending = true;
