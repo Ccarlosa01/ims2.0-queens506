@@ -60,19 +60,22 @@
     
     .price-preview-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(2, 7in);
+      grid-template-rows: repeat(2, 4.25in);
+      gap: 0;
+      justify-content: start;
     }
     
     .price-preview-card {
+      width: 7in;
+      height: 4.25in;
       border: 2px solid #222;
-      border-radius: 10px;
       background: white;
-      min-height: 220px;
-      padding: 12px;
+      box-sizing: border-box;
+      overflow: hidden;
+    
       display: grid;
-      grid-template-columns: 40% 60%;
-      gap: 10px;
+      grid-template-columns: 2.6in 4.4in;
     }
     
     .price-preview-image {
@@ -88,6 +91,15 @@
       max-width: 100%;
       max-height: 190px;
       object-fit: contain;
+    }
+
+    .price-preview-itemno {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 16px;
+      font-style: italic;
+      color: #333;
     }
     
     .price-preview-info h3 {
@@ -2895,7 +2907,9 @@ function renderPriceTagPreview() {
         <div>${tag.productType || "Product Type"}</div>
         <div>${tag.productSize || "Product Size"}</div>
         <div class="price-preview-price">$${Number(tag.price || 0).toFixed(2)}</div>
-        <div>Item No: ${tag.itemNo || ""}</div>
+        <div class="price-preview-itemno">
+          ${tag.itemNo || ""}
+        </div>
 
         ${
           tag.slogan
