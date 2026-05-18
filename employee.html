@@ -45,8 +45,8 @@
     .order-suggestion-item:hover { background:#f0f4ff; }
 
     .price-tag-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 20px;
     }
     
@@ -73,6 +73,7 @@
       background: white;
       box-sizing: border-box;
       overflow: hidden;
+      position: relative;
     
       display: grid;
       grid-template-columns: 2.6in 4.4in;
@@ -741,16 +742,15 @@
   
     <div class="price-tag-layout">
       <div class="card">
-        <h2>Tag Editor</h2>
-        <div id="priceTagEditors"></div>
-      </div>
-  
-      <div class="card">
         <h2>Live Preview</h2>
         <div id="priceTagPreview" class="price-preview-grid"></div>
       </div>
+    
+      <div class="card">
+        <h2>Tag Editor</h2>
+        <div id="priceTagEditors"></div>
+      </div>
     </div>
-  </div>
 
 </div>
 
