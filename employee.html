@@ -928,6 +928,11 @@
               <label>Image URL</label>
               <input id="priceTagImageUrl" oninput="updateSelectedPriceTag('imageUrl', this.value)" />
             </div>
+
+            <div>
+              <label>Upload Product Image</label>
+              <input id="priceTagImageUpload" type="file" accept="image/*" onchange="uploadPriceTagImage(this.files[0])" />
+            </div>
   
             <div>
               <label>Product Website URL</label>
@@ -981,6 +986,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzgz8o6xGNUPZ_vN2roJcnB5U8biAm-idypupcrJh6Vz6j7DquaScIp-iLfiJrces-gw/exec";
@@ -2982,6 +2988,8 @@ function createBlankPriceTag() {
     productSize: "",
     price: 0,
     imageUrl: "",
+    qrDataUrl: "",
+    imageSource: "url",
     productUrl: "",
     slogan: "",
     sloganBg: "#ffffff",
@@ -3039,7 +3047,7 @@ function loadSelectedPriceTagEditor() {
   document.getElementById("priceTagSloganFont").value = tag.sloganFont;
 }
 
-function updateSelectedPriceTag(field, value) {
+async function updateSelectedPriceTag(field, value) {
   if (!priceTags.length) return;
 
   const numericFields = [
@@ -3056,9 +3064,35 @@ function updateSelectedPriceTag(field, value) {
     ? Number(value || 0)
     : value;
 
+  if (field === "imageUrl") {
+    priceTags[selectedPriceTagIndex].imageSource = "url";
+  }
+  
+  if (field === "productUrl") {
+    await generatePriceTagQR(selectedPriceTagIndex);
+  }
+
   renderPriceTagPreview();
 }
 
+async function generatePriceTagQR(index) {
+  const tag = priceTags[index];
+
+  if (!tag.productUrl) {
+    tag.qrDataUrl = "";
+    return;
+  }
+
+  try {
+    tag.qrDataUrl = await QRCode.toDataURL(tag.productUrl, {
+      width: 120,
+      margin: 1
+    });
+  } catch {
+    tag.qrDataUrl = "";
+  }
+}
+  
 function showSelectedPriceTagSuggestions(query) {
   if (!priceTags.length) return;
 
@@ -3253,6 +3287,24 @@ function selectPriceTagProduct(item) {
   renderPriceTagPreview();
 }
 
+function uploadPriceTagImage(file) {
+  if (!file || !priceTags.length) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const tag = priceTags[selectedPriceTagIndex];
+
+    tag.imageUrl = e.target.result;
+    tag.imageSource = "upload";
+
+    document.getElementById("priceTagImageUrl").value = "";
+    renderPriceTagPreview();
+  };
+
+  reader.readAsDataURL(file);
+}
+
 function updatePriceTag(index, field, value) {
   const numericFields = [
     "price",
@@ -3312,7 +3364,11 @@ function renderPriceTagPreview() {
           $${Number(tag.price || 0).toFixed(2)}
         </div>
 
-        <div class="price-preview-qr">QR<br>Code</div>
+        ${
+          tag.qrDataUrl
+            ? `<img class="price-preview-qr" src="${tag.qrDataUrl}" alt="QR Code">`
+            : `<div class="price-preview-qr">QR<br>Code</div>`
+        }
 
         ${
           tag.slogan
