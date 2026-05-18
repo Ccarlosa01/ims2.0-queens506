@@ -110,6 +110,13 @@
     .price-editor-fonts input {
       margin-bottom: 8px;
     }
+
+    .price-editor-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
     
     .price-tag-editor {
       border: 1px solid #ddd;
@@ -960,7 +967,7 @@
               <input id="priceTagObjectPositionY" type="range" min="0" max="100" value="50" oninput="updateSelectedPriceTag('objectPositionY', this.value)" />
             </div>
             
-            <div>
+            <div class="price-editor-actions">
               <button class="secondary" onclick="saveSelectedPriceTagSettings()">Save Tag Settings</button>
             </div>
   
@@ -3424,7 +3431,7 @@ async function saveSelectedPriceTagSettings() {
         action: "savePriceTagSettings",
         settings: {
           itemNo: tag.itemNo,
-          imageUrl: tag.imageUrl,
+          imageUrl: tag.imageSource === "upload" ? "" : tag.imageUrl,
           objectPositionX: tag.objectPositionX || 50,
           objectPositionY: tag.objectPositionY || 50,
           objectZoom: tag.objectZoom || 100,
