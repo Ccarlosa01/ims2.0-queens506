@@ -226,6 +226,24 @@
       font-style: italic;
       color: #333;
     }
+
+    .mini-spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      margin-right: 8px;
+      border: 2px solid #c7d4ff;
+      border-top: 2px solid #1f5eff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
     
     @media (max-width: 1100px) {
       .price-editor-shell {
@@ -997,7 +1015,8 @@
                 Check for Previously Saved Settings
               </button>
             
-              <button class="secondary" onclick="saveSelectedPriceTagSettings()">
+              <button id="saveTagSettingsBtn" class="secondary" onclick="saveSelectedPriceTagSettings()">
+                <span id="saveTagSettingsSpinner" class="mini-spinner" style="display:none;"></span>
                 Save Tag Settings
               </button>
             </div>
@@ -3400,6 +3419,12 @@ async function loadPriceTagSettings() {
 }
 
 async function saveSelectedPriceTagSettings() {
+  const btn = document.getElementById("saveTagSettingsBtn");
+  const spinner = document.getElementById("saveTagSettingsSpinner");
+  
+  btn.disabled = true;
+  spinner.style.display = "inline-block";
+  
   if (!priceTags.length) return;
 
   const tag = priceTags[selectedPriceTagIndex];
@@ -3444,6 +3469,10 @@ async function saveSelectedPriceTagSettings() {
     }
   } catch {
     alert("Could not save price tag settings.");
+  }
+  finally {
+    btn.disabled = false;
+    spinner.style.display = "none";
   }
 }
 
