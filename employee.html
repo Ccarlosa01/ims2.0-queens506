@@ -148,16 +148,18 @@
     
     .price-preview-image {
       background: #f1f1f1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       overflow: hidden;
+      position: relative;
     }
     
     .price-preview-image img {
-      width: 100%;
-      height: 100%;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      max-width: 100%;
+      max-height: 100%;
       object-fit: contain;
+      transform-origin: center center;
     }
 
       
@@ -3508,14 +3510,17 @@ function renderPriceTagPreview() {
                 src="${tag.imageUrl}" 
                 alt="Bottle Image"
                 style="
-                  width:100%;
-                  height:100%;
-                  object-fit:cover;
-                  object-position:${tag.objectPositionX || 50}% ${tag.objectPositionY || 50}%;
-                  transform:scale(${Number(tag.objectZoom || 100) / 100});
+                  transform:
+                    translate(
+                      calc(-50% + ${(Number(tag.objectPositionX || 50) - 50) * 2}px),
+                      calc(-50% + ${(Number(tag.objectPositionY || 50) - 50) * 2}px)
+                    )
+                    scale(${Number(tag.objectZoom || 100) / 100});
                 "
               >`
-            : `<span class="muted">Bottle Image</span>`
+            : `<span class="muted" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+                Bottle Image
+              </span>`
         }
       </div>
 
