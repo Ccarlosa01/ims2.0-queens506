@@ -944,6 +944,25 @@
               <label>Upload Product Image</label>
               <input id="priceTagImageUpload" type="file" accept="image/*" onchange="uploadPriceTagImage(this.files[0])" />
             </div>
+
+            <div>
+              <label>Image Zoom</label>
+              <input id="priceTagObjectZoom" type="range" min="50" max="200" value="100" oninput="updateSelectedPriceTag('objectZoom', this.value)" />
+            </div>
+            
+            <div>
+              <label>Image Horizontal Position</label>
+              <input id="priceTagObjectPositionX" type="range" min="0" max="100" value="50" oninput="updateSelectedPriceTag('objectPositionX', this.value)" />
+            </div>
+            
+            <div>
+              <label>Image Vertical Position</label>
+              <input id="priceTagObjectPositionY" type="range" min="0" max="100" value="50" oninput="updateSelectedPriceTag('objectPositionY', this.value)" />
+            </div>
+            
+            <div>
+              <button class="secondary" onclick="saveSelectedPriceTagSettings()">Save Tag Settings</button>
+            </div>
   
             <div>
               <label>Product Website URL</label>
@@ -1000,7 +1019,7 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzgz8o6xGNUPZ_vN2roJcnB5U8biAm-idypupcrJh6Vz6j7DquaScIp-iLfiJrces-gw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx7A-t_yyPqHL6GqZw2WD2IWRAviDBYrtU8gSLtQyqmfwAdzEYSSu4LGFgKzon8JI9Rrg/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1015,6 +1034,7 @@ let inventoryEntryScanner = null;
 let inventoryReportData = [];
 let priceTags = [];
 let selectedPriceTagIndex = 0;
+let priceTagSettings = {};
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -1050,6 +1070,7 @@ window.onload = async function () {
   await loadBreakers();
   await loadCustomers();
   await loadBarcodes();
+  await loadPriceTagSettings();
 };
 
 function showTab(tabId, btn) {
@@ -3010,7 +3031,10 @@ function createBlankPriceTag() {
     sizeFont: 22,
     priceFont: 112,
     itemNoFont: 16,
-    sloganFont: 24
+    sloganFont: 24,
+    objectPositionX: 50,
+    objectPositionY: 50,
+    objectZoom: 100
   };
 }
 
@@ -3056,6 +3080,10 @@ function loadSelectedPriceTagEditor() {
   document.getElementById("priceTagPriceFont").value = tag.priceFont;
   document.getElementById("priceTagItemNoFont").value = tag.itemNoFont;
   document.getElementById("priceTagSloganFont").value = tag.sloganFont;
+
+  document.getElementById("priceTagObjectZoom").value = tag.objectZoom || 100;
+  document.getElementById("priceTagObjectPositionX").value = tag.objectPositionX || 50;
+  document.getElementById("priceTagObjectPositionY").value = tag.objectPositionY || 50;
 }
 
 async function updateSelectedPriceTag(field, value) {
@@ -3068,7 +3096,10 @@ async function updateSelectedPriceTag(field, value) {
     "sizeFont",
     "priceFont",
     "itemNoFont",
-    "sloganFont"
+    "sloganFont",
+    "objectZoom",
+    "objectPositionX",
+    "objectPositionY"
   ];
 
   priceTags[selectedPriceTagIndex][field] = numericFields.includes(field)
@@ -3287,6 +3318,30 @@ function selectPriceTagProduct(item) {
   tag.productName = item.description || "";
   tag.price = Number(item.basePrice || 0);
 
+  // Load saved settings if they exist
+  const saved = priceTagSettings[tag.itemNo];
+
+  if (saved) {
+    tag.imageUrl = saved.imageUrl || "";
+    tag.objectPositionX = saved.objectPositionX || 50;
+    tag.objectPositionY = saved.objectPositionY || 50;
+    tag.objectZoom = saved.objectZoom || 100;
+
+    tag.productName = saved.productName || tag.productName;
+    tag.productType = saved.productType || "";
+    tag.productSize = saved.productSize || "";
+    tag.productUrl = saved.productUrl || "";
+
+    tag.nameFont = saved.nameFont || 28;
+    tag.typeFont = saved.typeFont || 18;
+    tag.sizeFont = saved.sizeFont || 18;
+    tag.priceFont = saved.priceFont || 48;
+    tag.itemNoFont = saved.itemNoFont || 14;
+    tag.sloganFont = saved.sloganFont || 18;
+
+    generatePriceTagQR(selectedPriceTagIndex);
+  }
+
   document.getElementById("selectedPriceTagSuggestions").style.display = "none";
 
   loadSelectedPriceTagEditor();
@@ -3339,6 +3394,67 @@ function updateProductUrlForSelectedTag(value) {
   renderPriceTagPreview();
 }
 
+async function loadPriceTagSettings() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getPriceTagSettings`);
+    const result = await response.json();
+
+    if (result.success) {
+      priceTagSettings = result.settings || {};
+    }
+  } catch {
+    console.warn("Could not load price tag settings.");
+  }
+}
+
+async function saveSelectedPriceTagSettings() {
+  if (!priceTags.length) return;
+
+  const tag = priceTags[selectedPriceTagIndex];
+
+  if (!tag.itemNo) {
+    alert("Please select a product before saving tag settings.");
+    return;
+  }
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "savePriceTagSettings",
+        settings: {
+          itemNo: tag.itemNo,
+          imageUrl: tag.imageUrl,
+          objectPositionX: tag.objectPositionX || 50,
+          objectPositionY: tag.objectPositionY || 50,
+          objectZoom: tag.objectZoom || 100,
+          productName: tag.productName,
+          productType: tag.productType,
+          productSize: tag.productSize,
+          productUrl: tag.productUrl,
+          nameFont: tag.nameFont,
+          typeFont: tag.typeFont,
+          sizeFont: tag.sizeFont,
+          priceFont: tag.priceFont,
+          itemNoFont: tag.itemNoFont,
+          sloganFont: tag.sloganFont
+        }
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert(result.message);
+      await loadPriceTagSettings();
+    } else {
+      alert(result.message);
+    }
+  } catch {
+    alert("Could not save price tag settings.");
+  }
+}
+  
 function renderPriceTagPreview() {
   const preview = document.getElementById("priceTagPreview");
   preview.innerHTML = "";
@@ -3356,7 +3472,17 @@ function renderPriceTagPreview() {
       <div class="price-preview-image">
         ${
           tag.imageUrl
-            ? `<img src="${tag.imageUrl}" alt="Bottle Image">`
+            ? `<img 
+                src="${tag.imageUrl}" 
+                alt="Bottle Image"
+                style="
+                  width:100%;
+                  height:100%;
+                  object-fit:cover;
+                  object-position:${tag.objectPositionX || 50}% ${tag.objectPositionY || 50}%;
+                  transform:scale(${Number(tag.objectZoom || 100) / 100});
+                "
+              >`
             : `<span class="muted">Bottle Image</span>`
         }
       </div>
