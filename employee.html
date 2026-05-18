@@ -330,6 +330,22 @@
       grid-template-columns: repeat(2, 7in);
       grid-template-rows: repeat(2, 4.25in);
     }
+
+    .price-preview-scale-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+    
+    .price-preview-grid {
+      transform: scale(0.65);
+      transform-origin: top left;
+      width: 14in;
+      height: 8.5in;
+    }
+    
+    .price-preview-scale-wrap {
+      height: 5.6in;
+    }
     
     @media print {
       body * {
@@ -967,7 +983,9 @@
         </button>
       </div>
       <div class="table-scroll">
-        <div id="priceTagPreview" class="price-preview-grid"></div>
+        <div class="price-preview-scale-wrap">
+          <div id="priceTagPreview" class="price-preview-grid"></div>
+        </div>
       </div>
     </div>
   
