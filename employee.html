@@ -968,7 +968,13 @@
             </div>
             
             <div class="price-editor-actions">
-              <button class="secondary" onclick="saveSelectedPriceTagSettings()">Save Tag Settings</button>
+              <button class="secondary" onclick="loadSavedPriceTagSettings()">
+                Check for Previously Saved Settings
+              </button>
+            
+              <button class="secondary" onclick="saveSelectedPriceTagSettings()">
+                Save Tag Settings
+              </button>
             </div>
   
             <div>
@@ -3325,30 +3331,6 @@ function selectPriceTagProduct(item) {
   tag.productName = item.description || "";
   tag.price = Number(item.basePrice || 0);
 
-  // Load saved settings if they exist
-  const saved = priceTagSettings[tag.itemNo];
-
-  if (saved) {
-    tag.imageUrl = saved.imageUrl || "";
-    tag.objectPositionX = saved.objectPositionX || 50;
-    tag.objectPositionY = saved.objectPositionY || 50;
-    tag.objectZoom = saved.objectZoom || 100;
-
-    tag.productName = saved.productName || tag.productName;
-    tag.productType = saved.productType || "";
-    tag.productSize = saved.productSize || "";
-    tag.productUrl = saved.productUrl || "";
-
-    tag.nameFont = saved.nameFont || 28;
-    tag.typeFont = saved.typeFont || 18;
-    tag.sizeFont = saved.sizeFont || 18;
-    tag.priceFont = saved.priceFont || 48;
-    tag.itemNoFont = saved.itemNoFont || 14;
-    tag.sloganFont = saved.sloganFont || 18;
-
-    generatePriceTagQR(selectedPriceTagIndex);
-  }
-
   document.getElementById("selectedPriceTagSuggestions").style.display = "none";
 
   loadSelectedPriceTagEditor();
@@ -3460,6 +3442,48 @@ async function saveSelectedPriceTagSettings() {
   } catch {
     alert("Could not save price tag settings.");
   }
+}
+
+function loadSavedPriceTagSettings() {
+  if (!priceTags.length) return;
+
+  const tag = priceTags[selectedPriceTagIndex];
+
+  if (!tag.itemNo) {
+    alert("Please select a product first.");
+    return;
+  }
+
+  const saved = priceTagSettings[tag.itemNo];
+
+  if (!saved) {
+    alert("No saved settings found for this item.");
+    return;
+  }
+
+  tag.imageUrl = saved.imageUrl || "";
+  tag.objectPositionX = saved.objectPositionX || 50;
+  tag.objectPositionY = saved.objectPositionY || 50;
+  tag.objectZoom = saved.objectZoom || 100;
+
+  tag.productName = saved.productName || tag.productName;
+  tag.productType = saved.productType || "";
+  tag.productSize = saved.productSize || "";
+  tag.productUrl = saved.productUrl || "";
+
+  tag.nameFont = saved.nameFont || 28;
+  tag.typeFont = saved.typeFont || 18;
+  tag.sizeFont = saved.sizeFont || 18;
+  tag.priceFont = saved.priceFont || 48;
+  tag.itemNoFont = saved.itemNoFont || 14;
+  tag.sloganFont = saved.sloganFont || 18;
+
+  generatePriceTagQR(selectedPriceTagIndex);
+
+  loadSelectedPriceTagEditor();
+  renderPriceTagPreview();
+
+  alert("Saved settings loaded successfully.");
 }
   
 function renderPriceTagPreview() {
