@@ -936,7 +936,7 @@
   
             <div>
               <label>Product Website URL</label>
-              <input id="priceTagProductUrl" oninput="updateSelectedPriceTag('productUrl', this.value)" />
+              <input id="priceTagProductUrl" oninput="updateProductUrlForSelectedTag(this.value)" />
             </div>
   
             <div>
@@ -3078,17 +3078,25 @@ async function updateSelectedPriceTag(field, value) {
 async function generatePriceTagQR(index) {
   const tag = priceTags[index];
 
-  if (!tag.productUrl) {
+  if (!tag || !tag.productUrl || !tag.productUrl.trim()) {
     tag.qrDataUrl = "";
     return;
   }
 
   try {
-    tag.qrDataUrl = await QRCode.toDataURL(tag.productUrl, {
-      width: 120,
+    if (typeof QRCode === "undefined") {
+      console.error("QRCode library not loaded.");
+      tag.qrDataUrl = "";
+      return;
+    }
+
+    tag.qrDataUrl = await QRCode.toDataURL(tag.productUrl.trim(), {
+      width: 140,
       margin: 1
     });
-  } catch {
+
+  } catch (error) {
+    console.error("QR generation failed:", error);
     tag.qrDataUrl = "";
   }
 }
@@ -3321,6 +3329,16 @@ function updatePriceTag(index, field, value) {
   } else {
     priceTags[index][field] = value;
   }
+
+  renderPriceTagPreview();
+}
+
+async function updateProductUrlForSelectedTag(value) {
+  if (!priceTags.length) return;
+
+  priceTags[selectedPriceTagIndex].productUrl = value;
+
+  await generatePriceTagQR(selectedPriceTagIndex);
 
   renderPriceTagPreview();
 }
