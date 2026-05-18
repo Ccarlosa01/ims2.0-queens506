@@ -44,6 +44,17 @@
     .order-suggestion-item { padding:10px; cursor:pointer; border-bottom:1px solid #eee; }
     .order-suggestion-item:hover { background:#f0f4ff; }
 
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    
+    .preview-header h2 {
+      margin: 0;
+    }
+    
     .price-tag-layout {
       display: flex;
       flex-direction: column;
@@ -310,6 +321,40 @@
     
     .price-tag-suggestion-item:hover {
       background: #f0f4ff;
+    }
+
+    .print-sheet {
+      width: 14in;
+      height: 8.5in;
+      display: grid;
+      grid-template-columns: repeat(2, 7in);
+      grid-template-rows: repeat(2, 4.25in);
+    }
+    
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+    
+      .print-root,
+      .print-root * {
+        visibility: visible;
+      }
+    
+      .print-root {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 14in;
+        height: 8.5in;
+        margin: 0;
+        padding: 0;
+      }
+    
+      @page {
+        size: legal landscape;
+        margin: 0;
+      }
     }
 
     /* ===== Customer Order Totals Styling ===== */
@@ -914,7 +959,13 @@
     </div>
   
     <div class="card">
-      <h2>Live Preview</h2>
+      <div class="preview-header">
+        <h2>Live Preview</h2>
+      
+        <button class="primary" onclick="printPriceTags()">
+          Print Price Tags
+        </button>
+      </div>
       <div class="table-scroll">
         <div id="priceTagPreview" class="price-preview-grid"></div>
       </div>
@@ -3592,6 +3643,213 @@ function renderPriceTagPreview() {
 
     preview.appendChild(card);
   });
+}
+
+function printPriceTags() {
+  if (!priceTags.length) {
+    alert("Please generate at least one price tag.");
+    return;
+  }
+
+  const printWindow = window.open("", "_blank");
+
+  const html = `
+    <html>
+    <head>
+      <title>Print Price Tags</title>
+
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: Arial, sans-serif;
+        }
+
+        .print-sheet {
+          width: 14in;
+          height: 8.5in;
+          display: grid;
+          grid-template-columns: repeat(2, 7in);
+          grid-template-rows: repeat(2, 4.25in);
+        }
+
+        .price-preview-card {
+          width: 7in;
+          height: 4.25in;
+          border: 2px solid #222;
+          background: white;
+          box-sizing: border-box;
+          overflow: hidden;
+          position: relative;
+          display: grid;
+          grid-template-columns: 2.6in 4.4in;
+        }
+
+        .price-preview-image {
+          background: #f1f1f1;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .price-preview-image img {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          transform-origin: center center;
+        }
+
+        .price-preview-info {
+          position: relative;
+          padding: 10px 14px;
+        }
+
+        .price-preview-name,
+        .price-preview-type,
+        .price-preview-size {
+          text-align: left;
+          line-height: 1.1;
+          font-weight: bold;
+        }
+
+        .price-preview-price {
+          margin-top: 18px;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          min-height: 1.6in;
+        }
+
+        .price-preview-qr {
+          position: absolute;
+          right: 14px;
+          bottom: 38px;
+          width: 0.75in;
+          height: 0.75in;
+        }
+
+        .price-preview-slogan {
+          position: absolute;
+          left: 14px;
+          right: 1.05in;
+          bottom: 12px;
+          padding: 4px 8px;
+          font-weight: bold;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+
+        .price-preview-itemno {
+          position: absolute;
+          bottom: 12px;
+          right: 16px;
+          font-style: italic;
+          color: #333;
+        }
+
+        @page {
+          size: legal landscape;
+          margin: 0;
+        }
+      </style>
+    </head>
+
+    <body>
+      <div class="print-sheet">
+        ${generatePrintTagHTML()}
+      </div>
+
+      <script>
+        window.onload = () => {
+          window.print();
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+function generatePrintTagHTML() {
+  let html = "";
+
+  for (let i = 0; i < 4; i++) {
+    const tag = priceTags[i] || createBlankPriceTag();
+
+    html += `
+      <div class="price-preview-card">
+        <div class="price-preview-image">
+          ${
+            tag.imageUrl
+              ? `<img 
+                  src="${tag.imageUrl}" 
+                  style="
+                    transform:
+                      translate(
+                        calc(-50% + ${(Number(tag.objectPositionX || 50) - 50) * 2}px),
+                        calc(-50% + ${(Number(tag.objectPositionY || 50) - 50) * 2}px)
+                      )
+                      scale(${Number(tag.objectZoom || 100) / 100});
+                  "
+                >`
+              : ""
+          }
+        </div>
+
+        <div class="price-preview-info">
+          <div class="price-preview-name" style="font-size:${tag.nameFont}px;">
+            ${tag.productName || ""}
+          </div>
+
+          <div class="price-preview-type" style="font-size:${tag.typeFont}px;">
+            ${tag.productType || ""}
+          </div>
+
+          <div class="price-preview-size" style="font-size:${tag.sizeFont}px;">
+            ${tag.productSize || ""}
+          </div>
+
+          <div class="price-preview-price" style="font-size:${tag.priceFont}px;">
+            $${Number(tag.price || 0).toFixed(2)}
+          </div>
+
+          ${
+            tag.qrDataUrl
+              ? `<img class="price-preview-qr" src="${tag.qrDataUrl}">`
+              : ""
+          }
+
+          ${
+            tag.slogan
+              ? `<div class="price-preview-slogan"
+                    style="
+                      background:${tag.sloganBg};
+                      color:${tag.sloganColor};
+                      font-size:${tag.sloganFont}px;
+                    ">
+                    ${tag.slogan}
+                 </div>`
+              : ""
+          }
+
+          <div class="price-preview-itemno"
+               style="font-size:${tag.itemNoFont}px;">
+            ${tag.itemNo || ""}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  return html;
 }
   
 </script>
