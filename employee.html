@@ -148,7 +148,7 @@
     .price-preview-card {
       width: 7in;
       height: 4.25in;
-      border: 2px solid #222;
+      border: none;
       background: white;
       box-sizing: border-box;
       overflow: hidden;
@@ -328,7 +328,9 @@
       height: 8.5in;
       display: grid;
       grid-template-columns: repeat(2, 7in);
-      grid-template-rows: repeat(2, 4.25in);
+      grid-auto-rows: 4.25in;
+      justify-content: start;
+      align-content: start;
     }
 
     .price-preview-scale-wrap {
@@ -3694,7 +3696,7 @@ function printPriceTags() {
         .price-preview-card {
           width: 7in;
           height: 4.25in;
-          border: 2px solid #222;
+          border: none;
           background: white;
           box-sizing: border-box;
           overflow: hidden;
@@ -3800,9 +3802,7 @@ function printPriceTags() {
 function generatePrintTagHTML() {
   let html = "";
 
-  for (let i = 0; i < 4; i++) {
-    const tag = priceTags[i] || createBlankPriceTag();
-
+  priceTags.forEach(tag => {
     html += `
       <div class="price-preview-card">
         <div class="price-preview-image">
@@ -3866,7 +3866,7 @@ function generatePrintTagHTML() {
         </div>
       </div>
     `;
-  }
+  });
 
   return html;
 }
