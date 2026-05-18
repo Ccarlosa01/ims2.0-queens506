@@ -3075,7 +3075,7 @@ async function updateSelectedPriceTag(field, value) {
   renderPriceTagPreview();
 }
 
-async function generatePriceTagQR(index) {
+function generatePriceTagQR(index) {
   const tag = priceTags[index];
 
   if (!tag || !tag.productUrl || !tag.productUrl.trim()) {
@@ -3083,22 +3083,9 @@ async function generatePriceTagQR(index) {
     return;
   }
 
-  try {
-    if (typeof QRCode === "undefined") {
-      console.error("QRCode library not loaded.");
-      tag.qrDataUrl = "";
-      return;
-    }
-
-    tag.qrDataUrl = await QRCode.toDataURL(tag.productUrl.trim(), {
-      width: 140,
-      margin: 1
-    });
-
-  } catch (error) {
-    console.error("QR generation failed:", error);
-    tag.qrDataUrl = "";
-  }
+  tag.qrDataUrl =
+    "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" +
+    encodeURIComponent(tag.productUrl.trim());
 }
   
 function showSelectedPriceTagSuggestions(query) {
@@ -3333,13 +3320,11 @@ function updatePriceTag(index, field, value) {
   renderPriceTagPreview();
 }
 
-async function updateProductUrlForSelectedTag(value) {
+function updateProductUrlForSelectedTag(value) {
   if (!priceTags.length) return;
 
   priceTags[selectedPriceTagIndex].productUrl = value;
-
-  await generatePriceTagQR(selectedPriceTagIndex);
-
+  generatePriceTagQR(selectedPriceTagIndex);
   renderPriceTagPreview();
 }
 
