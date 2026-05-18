@@ -114,8 +114,9 @@
     .price-editor-actions {
       grid-column: 1 / -1;
       display: flex;
-      justify-content: flex-end;
-      margin-top: 8px;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
     }
     
     .price-tag-editor {
@@ -967,16 +968,6 @@
               <input id="priceTagObjectPositionY" type="range" min="0" max="100" value="50" oninput="updateSelectedPriceTag('objectPositionY', this.value)" />
             </div>
             
-            <div class="price-editor-actions">
-              <button class="secondary" onclick="loadSavedPriceTagSettings()">
-                Check for Previously Saved Settings
-              </button>
-            
-              <button class="secondary" onclick="saveSelectedPriceTagSettings()">
-                Save Tag Settings
-              </button>
-            </div>
-  
             <div>
               <label>Product Website URL</label>
               <input id="priceTagProductUrl" oninput="updateProductUrlForSelectedTag(this.value)" />
@@ -997,6 +988,16 @@
                 <label>Slogan Text Color</label>
                 <input id="priceTagSloganColor" type="color" oninput="updateSelectedPriceTag('sloganColor', this.value)" />
               </div>
+            </div>
+
+            <div class="price-editor-actions">
+              <button class="secondary" onclick="loadSavedPriceTagSettings()">
+                Check for Previously Saved Settings
+              </button>
+            
+              <button class="secondary" onclick="saveSelectedPriceTagSettings()">
+                Save Tag Settings
+              </button>
             </div>
           </div>
         </div>
