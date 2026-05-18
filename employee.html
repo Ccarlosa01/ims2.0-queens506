@@ -74,14 +74,12 @@
       box-sizing: border-box;
       overflow: hidden;
       position: relative;
-    
       display: grid;
       grid-template-columns: 2.6in 4.4in;
     }
     
     .price-preview-image {
       background: #f1f1f1;
-      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -89,22 +87,74 @@
     }
     
     .price-preview-image img {
-      max-width: 100%;
-      max-height: 190px;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
     }
 
     .price-preview-itemno {
       position: absolute;
-      bottom: 10px;
-      right: 12px;
-      font-size: 16px;
+      bottom: 8px;
+      right: 10px;
+      font-size: 14px;
       font-style: italic;
       color: #333;
     }
     
     .price-preview-info h3 {
       margin: 0;
+    }
+
+    .price-preview-info {
+      position: relative;
+      padding: 8px;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: 4px;
+    }
+
+    .price-preview-box {
+      border: 2px solid #777;
+      padding: 4px 8px;
+      text-align: left;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+
+    .price-preview-price-box {
+      border: 2px solid #777;
+      margin-top: 8px;
+      padding: 18px 8px;
+      text-align: left;
+      font-weight: bold;
+    }
+
+    .price-preview-bottom {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      display: grid;
+      grid-template-columns: 1fr 0.8in;
+      gap: 6px;
+      align-items: end;
+    }
+
+    .price-preview-slogan {
+      border: 2px solid #777;
+      padding: 4px 8px;
+      min-height: 24px;
+      font-weight: bold;
+    }
+    
+    .price-preview-qr {
+      border: 2px solid #777;
+      height: 0.72in;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      text-align: center;
     }
     
     .price-preview-price {
@@ -2748,8 +2798,15 @@ function generatePriceTagBuilders() {
       imageUrl: "",
       productUrl: "",
       slogan: "",
-      sloganBg: "#000000",
-      sloganColor: "#ffffff"
+      sloganBg: "#ffffff",
+      sloganColor: "#000000",
+    
+      nameFont: 22,
+      typeFont: 18,
+      sizeFont: 18,
+      priceFont: 42,
+      itemNoFont: 14,
+      sloganFont: 16
     });
   }
 
@@ -2814,6 +2871,44 @@ function renderPriceTagEditors() {
           <input type="color" value="${tag.sloganColor}" oninput="updatePriceTag(${index}, 'sloganColor', this.value)" />
         </div>
       </div>
+
+      <h4>Font Sizes</h4>
+      
+      <div class="row">
+        <div>
+          <label>Product Name Font</label>
+          <input type="number" value="${tag.nameFont}" oninput="updatePriceTag(${index}, 'nameFont', this.value)" />
+        </div>
+      
+        <div>
+          <label>Product Type Font</label>
+          <input type="number" value="${tag.typeFont}" oninput="updatePriceTag(${index}, 'typeFont', this.value)" />
+        </div>
+      </div>
+      
+      <div class="row">
+        <div>
+          <label>Product Size Font</label>
+          <input type="number" value="${tag.sizeFont}" oninput="updatePriceTag(${index}, 'sizeFont', this.value)" />
+        </div>
+      
+        <div>
+          <label>Price Font</label>
+          <input type="number" value="${tag.priceFont}" oninput="updatePriceTag(${index}, 'priceFont', this.value)" />
+        </div>
+      </div>
+      
+      <div class="row">
+        <div>
+          <label>Item No. Font</label>
+          <input type="number" value="${tag.itemNoFont}" oninput="updatePriceTag(${index}, 'itemNoFont', this.value)" />
+        </div>
+      
+        <div>
+          <label>Slogan Font</label>
+          <input type="number" value="${tag.sloganFont}" oninput="updatePriceTag(${index}, 'sloganFont', this.value)" />
+        </div>
+      </div>
     `;
 
     container.appendChild(div);
@@ -2871,7 +2966,17 @@ function selectPriceTagProduct(index, item) {
 }
 
 function updatePriceTag(index, field, value) {
-  if (field === "price") {
+  const numericFields = [
+    "price",
+    "nameFont",
+    "typeFont",
+    "sizeFont",
+    "priceFont",
+    "itemNoFont",
+    "sloganFont"
+  ];
+
+  if (numericFields.includes(field)) {
     priceTags[index][field] = Number(value || 0);
   } else {
     priceTags[index][field] = value;
@@ -2901,23 +3006,41 @@ function renderPriceTagPreview() {
             : `<span class="muted">Bottle Image</span>`
         }
       </div>
-
+    
       <div class="price-preview-info">
-        <h3>${tag.productName || "Product Name"}</h3>
-        <div>${tag.productType || "Product Type"}</div>
-        <div>${tag.productSize || "Product Size"}</div>
-        <div class="price-preview-price">$${Number(tag.price || 0).toFixed(2)}</div>
-        <div class="price-preview-itemno">
+        <div class="price-preview-box" style="font-size:${tag.nameFont}px;">
+          ${tag.productName || "Product Name"}
+        </div>
+    
+        <div class="price-preview-box" style="font-size:${tag.typeFont}px;">
+          ${tag.productType || "Product Type"}
+        </div>
+    
+        <div class="price-preview-box" style="font-size:${tag.sizeFont}px;">
+          ${tag.productSize || "Product Size"}
+        </div>
+    
+        <div class="price-preview-price-box" style="font-size:${tag.priceFont}px;">
+          $${Number(tag.price || 0).toFixed(2)}
+        </div>
+    
+        <div class="price-preview-bottom">
+          ${
+            tag.slogan
+              ? `<div class="price-preview-slogan" style="background:${tag.sloganBg}; color:${tag.sloganColor}; font-size:${tag.sloganFont}px;">
+                  ${tag.slogan}
+                </div>`
+              : `<div></div>`
+          }
+    
+          <div class="price-preview-qr">
+            QR<br>Code
+          </div>
+        </div>
+    
+        <div class="price-preview-itemno" style="font-size:${tag.itemNoFont}px;">
           ${tag.itemNo || ""}
         </div>
-
-        ${
-          tag.slogan
-            ? `<div style="margin-top:10px; padding:8px; border-radius:6px; background:${tag.sloganBg}; color:${tag.sloganColor}; font-weight:bold;">
-                ${tag.slogan}
-              </div>`
-            : ""
-        }
       </div>
     `;
 
