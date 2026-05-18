@@ -49,6 +49,67 @@
       flex-direction: column;
       gap: 20px;
     }
+
+    .price-editor-shell {
+      display: grid;
+      grid-template-columns: 160px 1fr 250px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .price-tag-list {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .price-tag-list button {
+      display: block;
+      width: 100%;
+      margin: 0;
+      border-radius: 0;
+      background: white;
+      color: #222;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .price-tag-list button.active {
+      background: #1f5eff;
+      color: white;
+    }
+
+    .price-editor-main,
+    .price-editor-fonts {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fafafa;
+    }
+    
+    .price-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    
+    .price-editor-grid > div:nth-child(1),
+    .price-editor-grid > div:nth-child(7),
+    .price-editor-grid > div:nth-child(8),
+    .price-editor-grid > div:nth-child(9) {
+      grid-column: span 2;
+    }
+
+    .price-editor-color-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      grid-column: span 2;
+    }
+    
+    .price-editor-fonts input {
+      margin-bottom: 8px;
+    }
     
     .price-tag-editor {
       border: 1px solid #ddd;
@@ -63,7 +124,6 @@
       grid-template-columns: repeat(2, 7in);
       grid-template-rows: repeat(2, 4.25in);
       gap: 0;
-      justify-content: start;
     }
     
     .price-preview-card {
@@ -92,25 +152,68 @@
       object-fit: contain;
     }
 
-    .price-preview-itemno {
-      position: absolute;
-      bottom: 8px;
-      right: 10px;
-      font-size: 14px;
-      font-style: italic;
-      color: #333;
-    }
-    
+      
     .price-preview-info h3 {
       margin: 0;
     }
 
     .price-preview-info {
       position: relative;
-      padding: 8px;
-      display: grid;
-      grid-template-rows: auto auto auto 1fr auto;
-      gap: 4px;
+      padding: 10px 14px;
+    }
+
+    .price-preview-name,
+    .price-preview-type,
+    .price-preview-size {
+      text-align: left;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+    
+    .price-preview-price {
+      margin-top: 18px;
+      font-weight: bold;
+      text-align: left;
+    }
+    
+    .price-preview-qr {
+      position: absolute;
+      right: 14px;
+      bottom: 38px;
+      width: 0.75in;
+      height: 0.75in;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      text-align: center;
+    }
+    
+    .price-preview-slogan {
+      position: absolute;
+      left: 14px;
+      right: 1.05in;
+      bottom: 12px;
+      padding: 4px 8px;
+      font-weight: bold;
+    }
+    
+    .price-preview-itemno {
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      font-style: italic;
+      color: #333;
+    }
+    
+    @media (max-width: 1100px) {
+      .price-editor-shell {
+        grid-template-columns: 1fr;
+      }
+    
+      .price-editor-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     .price-preview-box {
@@ -140,28 +243,6 @@
       align-items: end;
     }
 
-    .price-preview-slogan {
-      border: 2px solid #777;
-      padding: 4px 8px;
-      min-height: 24px;
-      font-weight: bold;
-    }
-    
-    .price-preview-qr {
-      border: 2px solid #777;
-      height: 0.72in;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      text-align: center;
-    }
-    
-    .price-preview-price {
-      font-size: 34px;
-      font-weight: bold;
-      margin: 8px 0;
-    }
     
     .price-tag-search-wrap {
       position: relative;
@@ -775,34 +856,127 @@
   <div id="priceTags" class="tab-section">
     <div class="card">
       <h2>Price Tag Builder</h2>
-      <p class="muted">
-        Select how many price tags you need, then search products from Inventory.
-      </p>
   
-      <label for="priceTagCount">How many price tags?</label>
-      <select id="priceTagCount">
-        <option value="1">1 Price Tag</option>
-        <option value="2">2 Price Tags</option>
-        <option value="3">3 Price Tags</option>
-        <option value="4">4 Price Tags</option>
-      </select>
+      <div class="row">
+        <div>
+          <label for="priceTagCount">How many tags?</label>
+          <select id="priceTagCount">
+            <option value="1">1 Tag</option>
+            <option value="2">2 Tags</option>
+            <option value="3">3 Tags</option>
+            <option value="4">4 Tags</option>
+          </select>
+        </div>
   
-      <button class="primary" onclick="generatePriceTagBuilders()">Generate Price Tags</button>
+        <div>
+          <button class="primary" onclick="generatePriceTagBuilders()">Generate Tags</button>
+        </div>
+      </div>
     </div>
   
-    <div class="price-tag-layout">
-      <div class="card">
-        <h2>Live Preview</h2>
+    <div class="card">
+      <h2>Live Preview</h2>
+      <div class="table-scroll">
         <div id="priceTagPreview" class="price-preview-grid"></div>
       </div>
-    
-      <div class="card">
-        <h2>Tag Editor</h2>
-        <div id="priceTagEditors"></div>
+    </div>
+  
+    <div class="card">
+      <h2>Tag Editor</h2>
+  
+      <div class="price-editor-shell">
+        <div class="price-tag-list" id="priceTagList"></div>
+  
+        <div class="price-editor-main">
+          <h3 id="selectedPriceTagTitle">Select a tag to edit</h3>
+  
+          <div class="price-editor-grid">
+            <div>
+              <label>Search Product</label>
+              <div class="price-tag-search-wrap">
+                <input id="priceTagSearchInput" placeholder="Search by item no. or description..." oninput="showSelectedPriceTagSuggestions(this.value)" autocomplete="off" />
+                <div id="selectedPriceTagSuggestions" class="price-tag-suggestions"></div>
+              </div>
+            </div>
+  
+            <div>
+              <label>Item No.</label>
+              <input id="priceTagItemNo" class="readonly-field" readonly />
+            </div>
+  
+            <div>
+              <label>Product Name</label>
+              <input id="priceTagProductName" oninput="updateSelectedPriceTag('productName', this.value)" />
+            </div>
+  
+            <div>
+              <label>Product Type</label>
+              <input id="priceTagProductType" oninput="updateSelectedPriceTag('productType', this.value)" />
+            </div>
+  
+            <div>
+              <label>Product Size</label>
+              <input id="priceTagProductSize" oninput="updateSelectedPriceTag('productSize', this.value)" />
+            </div>
+  
+            <div>
+              <label>Price</label>
+              <input id="priceTagPrice" type="number" step="0.01" oninput="updateSelectedPriceTag('price', this.value)" />
+            </div>
+  
+            <div>
+              <label>Image URL</label>
+              <input id="priceTagImageUrl" oninput="updateSelectedPriceTag('imageUrl', this.value)" />
+            </div>
+  
+            <div>
+              <label>Product Website URL</label>
+              <input id="priceTagProductUrl" oninput="updateSelectedPriceTag('productUrl', this.value)" />
+            </div>
+  
+            <div>
+              <label>Optional Slogan</label>
+              <input id="priceTagSlogan" oninput="updateSelectedPriceTag('slogan', this.value)" />
+            </div>
+  
+            <div class="price-editor-color-row">
+              <div>
+                <label>Slogan Background</label>
+                <input id="priceTagSloganBg" type="color" oninput="updateSelectedPriceTag('sloganBg', this.value)" />
+              </div>
+  
+              <div>
+                <label>Slogan Text Color</label>
+                <input id="priceTagSloganColor" type="color" oninput="updateSelectedPriceTag('sloganColor', this.value)" />
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <div class="price-editor-fonts">
+          <h3>Font Sizes</h3>
+  
+          <label>Product Name</label>
+          <input id="priceTagNameFont" type="number" oninput="updateSelectedPriceTag('nameFont', this.value)" />
+  
+          <label>Product Type</label>
+          <input id="priceTagTypeFont" type="number" oninput="updateSelectedPriceTag('typeFont', this.value)" />
+  
+          <label>Product Size</label>
+          <input id="priceTagSizeFont" type="number" oninput="updateSelectedPriceTag('sizeFont', this.value)" />
+  
+          <label>Price</label>
+          <input id="priceTagPriceFont" type="number" oninput="updateSelectedPriceTag('priceFont', this.value)" />
+  
+          <label>Item No.</label>
+          <input id="priceTagItemNoFont" type="number" oninput="updateSelectedPriceTag('itemNoFont', this.value)" />
+  
+          <label>Slogan</label>
+          <input id="priceTagSloganFont" type="number" oninput="updateSelectedPriceTag('sloganFont', this.value)" />
+        </div>
       </div>
     </div>
-
-</div>
+  </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
@@ -823,6 +997,7 @@ let barcodeData = [];
 let inventoryEntryScanner = null;
 let inventoryReportData = [];
 let priceTags = [];
+let selectedPriceTagIndex = 0;
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -2789,30 +2964,142 @@ function generatePriceTagBuilders() {
   priceTags = [];
 
   for (let i = 0; i < count; i++) {
-    priceTags.push({
-      itemNo: "",
-      productName: "",
-      productType: "",
-      productSize: "",
-      price: 0,
-      imageUrl: "",
-      productUrl: "",
-      slogan: "",
-      sloganBg: "#ffffff",
-      sloganColor: "#000000",
-    
-      nameFont: 22,
-      typeFont: 18,
-      sizeFont: 18,
-      priceFont: 42,
-      itemNoFont: 14,
-      sloganFont: 16
-    });
+    priceTags.push(createBlankPriceTag());
   }
 
-  renderPriceTagEditors();
+  selectedPriceTagIndex = 0;
+
+  renderPriceTagList();
+  loadSelectedPriceTagEditor();
   renderPriceTagPreview();
 }
+
+function createBlankPriceTag() {
+  return {
+    itemNo: "",
+    productName: "",
+    productType: "",
+    productSize: "",
+    price: 0,
+    imageUrl: "",
+    productUrl: "",
+    slogan: "",
+    sloganBg: "#ffffff",
+    sloganColor: "#000000",
+    nameFont: 28,
+    typeFont: 18,
+    sizeFont: 18,
+    priceFont: 48,
+    itemNoFont: 14,
+    sloganFont: 18
+  };
+}
+
+function renderPriceTagList() {
+  const list = document.getElementById("priceTagList");
+  list.innerHTML = "";
+
+  priceTags.forEach((tag, index) => {
+    const btn = document.createElement("button");
+    btn.textContent = `Tag ${index + 1}`;
+    btn.className = index === selectedPriceTagIndex ? "active" : "";
+    btn.onclick = () => {
+      selectedPriceTagIndex = index;
+      renderPriceTagList();
+      loadSelectedPriceTagEditor();
+    };
+    list.appendChild(btn);
+  });
+}
+
+function loadSelectedPriceTagEditor() {
+  if (!priceTags.length) return;
+
+  const tag = priceTags[selectedPriceTagIndex];
+
+  document.getElementById("selectedPriceTagTitle").textContent = `Editing Tag ${selectedPriceTagIndex + 1}`;
+
+  document.getElementById("priceTagSearchInput").value = tag.productName || "";
+  document.getElementById("priceTagItemNo").value = tag.itemNo || "";
+  document.getElementById("priceTagProductName").value = tag.productName || "";
+  document.getElementById("priceTagProductType").value = tag.productType || "";
+  document.getElementById("priceTagProductSize").value = tag.productSize || "";
+  document.getElementById("priceTagPrice").value = Number(tag.price || 0).toFixed(2);
+  document.getElementById("priceTagImageUrl").value = tag.imageUrl || "";
+  document.getElementById("priceTagProductUrl").value = tag.productUrl || "";
+  document.getElementById("priceTagSlogan").value = tag.slogan || "";
+  document.getElementById("priceTagSloganBg").value = tag.sloganBg || "#ffffff";
+  document.getElementById("priceTagSloganColor").value = tag.sloganColor || "#000000";
+
+  document.getElementById("priceTagNameFont").value = tag.nameFont;
+  document.getElementById("priceTagTypeFont").value = tag.typeFont;
+  document.getElementById("priceTagSizeFont").value = tag.sizeFont;
+  document.getElementById("priceTagPriceFont").value = tag.priceFont;
+  document.getElementById("priceTagItemNoFont").value = tag.itemNoFont;
+  document.getElementById("priceTagSloganFont").value = tag.sloganFont;
+}
+
+function updateSelectedPriceTag(field, value) {
+  if (!priceTags.length) return;
+
+  const numericFields = [
+    "price",
+    "nameFont",
+    "typeFont",
+    "sizeFont",
+    "priceFont",
+    "itemNoFont",
+    "sloganFont"
+  ];
+
+  priceTags[selectedPriceTagIndex][field] = numericFields.includes(field)
+    ? Number(value || 0)
+    : value;
+
+  renderPriceTagPreview();
+}
+
+function showSelectedPriceTagSuggestions(query) {
+  if (!priceTags.length) return;
+
+  priceTags[selectedPriceTagIndex].productName = query;
+  document.getElementById("priceTagProductName").value = query;
+
+  const box = document.getElementById("selectedPriceTagSuggestions");
+  box.innerHTML = "";
+
+  const search = String(query || "").toLowerCase().trim();
+
+  if (!search) {
+    box.style.display = "none";
+    renderPriceTagPreview();
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo || "").toLowerCase().includes(search) ||
+    String(item.description || "").toLowerCase().includes(search)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "price-tag-suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onmousedown = e => {
+      e.preventDefault();
+      selectPriceTagProduct(item);
+    };
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+  
 
 function renderPriceTagEditors() {
   const container = document.getElementById("priceTagEditors");
@@ -2953,15 +3240,16 @@ function showPriceTagSuggestions(index, query) {
   box.style.display = "block";
 }
 
-function selectPriceTagProduct(index, item) {
-  priceTags[index].itemNo = item.itemNo || "";
-  priceTags[index].productName = item.description || "";
-  priceTags[index].price = Number(item.basePrice || 0);
+function selectPriceTagProduct(item) {
+  const tag = priceTags[selectedPriceTagIndex];
 
-  const box = document.getElementById(`priceTagSuggestions-${index}`);
-  if (box) box.style.display = "none";
+  tag.itemNo = item.itemNo || "";
+  tag.productName = item.description || "";
+  tag.price = Number(item.basePrice || 0);
 
-  renderPriceTagEditors();
+  document.getElementById("selectedPriceTagSuggestions").style.display = "none";
+
+  loadSelectedPriceTagEditor();
   renderPriceTagPreview();
 }
 
@@ -2994,7 +3282,7 @@ function renderPriceTagPreview() {
     return;
   }
 
-  priceTags.forEach((tag, index) => {
+  priceTags.forEach(tag => {
     const card = document.createElement("div");
     card.className = "price-preview-card";
 
@@ -3006,38 +3294,34 @@ function renderPriceTagPreview() {
             : `<span class="muted">Bottle Image</span>`
         }
       </div>
-    
+
       <div class="price-preview-info">
-        <div class="price-preview-box" style="font-size:${tag.nameFont}px;">
+        <div class="price-preview-name" style="font-size:${tag.nameFont}px;">
           ${tag.productName || "Product Name"}
         </div>
-    
-        <div class="price-preview-box" style="font-size:${tag.typeFont}px;">
+
+        <div class="price-preview-type" style="font-size:${tag.typeFont}px;">
           ${tag.productType || "Product Type"}
         </div>
-    
-        <div class="price-preview-box" style="font-size:${tag.sizeFont}px;">
+
+        <div class="price-preview-size" style="font-size:${tag.sizeFont}px;">
           ${tag.productSize || "Product Size"}
         </div>
-    
-        <div class="price-preview-price-box" style="font-size:${tag.priceFont}px;">
+
+        <div class="price-preview-price" style="font-size:${tag.priceFont}px;">
           $${Number(tag.price || 0).toFixed(2)}
         </div>
-    
-        <div class="price-preview-bottom">
-          ${
-            tag.slogan
-              ? `<div class="price-preview-slogan" style="background:${tag.sloganBg}; color:${tag.sloganColor}; font-size:${tag.sloganFont}px;">
-                  ${tag.slogan}
-                </div>`
-              : `<div></div>`
-          }
-    
-          <div class="price-preview-qr">
-            QR<br>Code
-          </div>
-        </div>
-    
+
+        <div class="price-preview-qr">QR<br>Code</div>
+
+        ${
+          tag.slogan
+            ? `<div class="price-preview-slogan" style="background:${tag.sloganBg}; color:${tag.sloganColor}; font-size:${tag.sloganFont}px;">
+                ${tag.slogan}
+              </div>`
+            : ""
+        }
+
         <div class="price-preview-itemno" style="font-size:${tag.itemNoFont}px;">
           ${tag.itemNo || ""}
         </div>
