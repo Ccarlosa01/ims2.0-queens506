@@ -472,6 +472,32 @@
       font-style: italic;
       color: #333;
     }
+
+    .floating-price-editor {
+      position: fixed;
+      z-index: 99999;
+      width: 320px;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      padding: 16px;
+      border: 1px solid #ddd;
+    }
+    
+    .floating-editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    
+    .floating-price-editor input {
+      width: 100%;
+    }
+    
+    .floating-price-editor label {
+      margin-top: 10px;
+    }
     
     @media (max-width: 900px) {
       .price-product-selectors,
@@ -1121,6 +1147,18 @@
       <div id="priceElementEditorBody"></div>
     </div>
   
+  </div>
+
+  <div id="floatingPriceEditor" class="floating-price-editor" style="display:none;">
+    <div class="floating-editor-header">
+      <strong id="floatingEditorTitle">Edit</strong>
+  
+      <button class="danger small-btn" onclick="closeFloatingPriceEditor()">
+        ✕
+      </button>
+    </div>
+  
+    <div id="floatingPriceEditorBody"></div>
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -3705,7 +3743,7 @@ function renderPriceTagPreview() {
     card.className = "price-preview-card";
 
     card.innerHTML = `
-      <div class="price-preview-image price-clickable" onclick="openPriceElementEditor(${index}, 'image')">
+      <div class="price-preview-image price-clickable" onclick="openFloatingEditor(${index}, 'image', event)">
         ${
           tag.imageUrl
             ? `<img 
@@ -3727,32 +3765,32 @@ function renderPriceTagPreview() {
       </div>
 
       <div class="price-preview-info">
-        <div class="price-preview-name price-clickable" onclick="openPriceElementEditor(${index}, 'name')" style="font-size:${tag.nameFont}px;">
+        <div class="price-preview-name price-clickable" onclick="openFloatingEditor(${index}, 'name', event)" style="font-size:${tag.nameFont}px;">
           ${tag.productName || "Product Name"}
         </div>
 
-        <div class="price-preview-type price-clickable" onclick="openPriceElementEditor(${index}, 'type')" style="font-size:${tag.typeFont}px;">
+        <div class="price-preview-type price-clickable" onclick="openFloatingEditor(${index}, 'type', event)" style="font-size:${tag.typeFont}px;">
           ${tag.productType || "Product Type"}
         </div>
 
-        <div class="price-preview-size price-clickable" onclick="openPriceElementEditor(${index}, 'size')" style="font-size:${tag.sizeFont}px;">
+        <div class="price-preview-size price-clickable" onclick="openFloatingEditor(${index}, 'size', event)" style="font-size:${tag.sizeFont}px;">
           ${tag.productSize || "Product Size"}
         </div>
 
-        <div class="price-preview-price price-clickable" onclick="openPriceElementEditor(${index}, 'price')" style="font-size:${tag.priceFont}px;">
+        <div class="price-preview-price price-clickable" onclick="openFloatingEditor(${index}, 'price', event)" style="font-size:${tag.priceFont}px;">
           $${Number(tag.price || 0).toFixed(2)}
         </div>
 
         ${
           tag.qrDataUrl
-            ? `<img class="price-preview-qr price-clickable" onclick="openPriceElementEditor(${index}, 'qr')" src="${tag.qrDataUrl}">`
-            : `<div class="price-preview-qr price-clickable" onclick="openPriceElementEditor(${index}, 'qr')">QR<br>Code</div>`
+            ? `<img class="price-preview-qr price-clickable" onclick="openFloatingEditor(${index}, 'qr', event)" src="${tag.qrDataUrl}">`
+            : `<div class="price-preview-qr price-clickable" onclick="openFloatingEditor(${index}, 'qr', event)">QR<br>Code</div>`
         }
 
         ${
           tag.slogan
             ? `<div class="price-preview-slogan price-clickable"
-                  onclick="openPriceElementEditor(${index}, 'slogan')"
+                  onclick="openFloatingEditor(${index}, 'slogan', event)"
                   style="
                     background:${tag.sloganBg};
                     color:${tag.sloganColor};
@@ -3760,12 +3798,12 @@ function renderPriceTagPreview() {
                   ">
                   ${tag.slogan}
                </div>`
-            : `<div class="price-preview-slogan price-clickable" onclick="openPriceElementEditor(${index}, 'slogan')">
+            : `<div class="price-preview-slogan price-clickable" onclick="openFloatingEditor(${index}, 'slogan', event)">
                 Slogan
                </div>`
         }
 
-        <div class="price-preview-itemno price-clickable" onclick="openPriceElementEditor(${index}, 'itemNo')" style="font-size:${tag.itemNoFont}px;">
+        <div class="price-preview-itemno price-clickable" onclick="openFloatingEditor(${index}, 'itemNo', event)" style="font-size:${tag.itemNoFont}px;">
           ${tag.itemNo || ""}
         </div>
       </div>
@@ -3925,6 +3963,167 @@ function uploadVisualPriceTagImage(file) {
   };
 
   reader.readAsDataURL(file);
+}
+
+function openFloatingEditor(index, element, event) {
+  selectedPriceTagIndex = index;
+  selectedPriceElement = element;
+
+  const panel = document.getElementById("floatingPriceEditor");
+  const title = document.getElementById("floatingEditorTitle");
+  const body = document.getElementById("floatingPriceEditorBody");
+
+  panel.style.display = "block";
+
+  panel.style.left = Math.min(window.innerWidth - 340, event.clientX + 16) + "px";
+  panel.style.top = Math.min(window.innerHeight - 420, event.clientY + 16) + "px";
+
+  const tag = priceTags[index];
+
+  title.textContent = `Edit ${element}`;
+
+  if (element === "name") {
+    body.innerHTML = `
+      <label>Product Name</label>
+      <input value="${tag.productName || ""}" 
+             oninput="updateVisualTag('productName', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.nameFont}"
+             oninput="updateVisualTag('nameFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "type") {
+    body.innerHTML = `
+      <label>Product Type</label>
+      <input value="${tag.productType || ""}" 
+             oninput="updateVisualTag('productType', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.typeFont}"
+             oninput="updateVisualTag('typeFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "size") {
+    body.innerHTML = `
+      <label>Product Size</label>
+      <input value="${tag.productSize || ""}" 
+             oninput="updateVisualTag('productSize', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.sizeFont}"
+             oninput="updateVisualTag('sizeFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "price") {
+    body.innerHTML = `
+      <label>Price</label>
+      <input type="number"
+             step="0.01"
+             value="${tag.price}"
+             oninput="updateVisualTag('price', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.priceFont}"
+             oninput="updateVisualTag('priceFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "itemNo") {
+    body.innerHTML = `
+      <label>Item No.</label>
+      <input value="${tag.itemNo || ""}" 
+             oninput="updateVisualTag('itemNo', this.value)">
+
+      <label>Font Size</label>
+      <input type="number"
+             value="${tag.itemNoFont}"
+             oninput="updateVisualTag('itemNoFont', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "slogan") {
+    body.innerHTML = `
+      <label>Slogan</label>
+      <input value="${tag.slogan || ""}" 
+             oninput="updateVisualTag('slogan', this.value)">
+
+      <label>Slogan Font</label>
+      <input type="number"
+             value="${tag.sloganFont}"
+             oninput="updateVisualTag('sloganFont', this.value)">
+
+      <label>Background Color</label>
+      <input type="color"
+             value="${tag.sloganBg}"
+             oninput="updateVisualTag('sloganBg', this.value)">
+
+      <label>Text Color</label>
+      <input type="color"
+             value="${tag.sloganColor}"
+             oninput="updateVisualTag('sloganColor', this.value)">
+    `;
+    return;
+  }
+
+  if (element === "qr") {
+    body.innerHTML = `
+      <label>Product Website URL</label>
+      <input value="${tag.productUrl || ""}" 
+             oninput="updateVisualProductUrl(this.value)">
+    `;
+    return;
+  }
+
+  if (element === "image") {
+    body.innerHTML = `
+      <label>Image URL</label>
+      <input value="${tag.imageUrl || ""}" 
+             oninput="updateVisualTag('imageUrl', this.value)">
+
+      <label>Upload Image</label>
+      <input type="file"
+             accept="image/*"
+             onchange="uploadVisualPriceTagImage(this.files[0])">
+
+      <label>Zoom</label>
+      <input type="range"
+             min="50"
+             max="200"
+             value="${tag.objectZoom}"
+             oninput="updateVisualTag('objectZoom', this.value)">
+
+      <label>Horizontal Position</label>
+      <input type="range"
+             min="0"
+             max="100"
+             value="${tag.objectPositionX}"
+             oninput="updateVisualTag('objectPositionX', this.value)">
+
+      <label>Vertical Position</label>
+      <input type="range"
+             min="0"
+             max="100"
+             value="${tag.objectPositionY}"
+             oninput="updateVisualTag('objectPositionY', this.value)">
+    `;
+  }
+}
+
+function closeFloatingPriceEditor() {
+  document.getElementById("floatingPriceEditor").style.display = "none";
 }
   
 function printPriceTags() {
