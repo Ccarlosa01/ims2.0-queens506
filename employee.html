@@ -348,6 +348,137 @@
     .price-preview-scale-wrap {
       height: 5.6in;
     }
+
+    .price-product-selectors {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+    
+    .price-product-selector {
+      position: relative;
+    }
+    
+    .price-clickable {
+      cursor: pointer;
+      outline: 2px dashed transparent;
+    }
+    
+    .price-clickable:hover {
+      outline: 2px dashed #1f5eff;
+      outline-offset: 3px;
+    }
+    
+    .price-element-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    
+    .price-preview-scale-wrap {
+      width: 100%;
+      overflow-x: auto;
+      height: 5.6in;
+    }
+    
+    .price-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 7in);
+      grid-template-rows: repeat(2, 4.25in);
+      gap: 0;
+      transform: scale(0.65);
+      transform-origin: top left;
+      width: 14in;
+      height: 8.5in;
+    }
+    
+    .price-preview-card {
+      width: 7in;
+      height: 4.25in;
+      background: white;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+      display: grid;
+      grid-template-columns: 2.1in 4.9in;
+    }
+    
+    .price-preview-image {
+      background: #f1f1f1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .price-preview-image img {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transform-origin: center center;
+    }
+    
+    .price-preview-info {
+      position: relative;
+      padding: 10px 14px;
+      overflow: hidden;
+    }
+    
+    .price-preview-name,
+    .price-preview-type,
+    .price-preview-size {
+      text-align: left;
+      line-height: 1.1;
+      font-weight: bold;
+    }
+    
+    .price-preview-price {
+      margin-top: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      min-height: 1.6in;
+    }
+    
+    .price-preview-qr {
+      position: absolute;
+      right: 14px;
+      bottom: 38px;
+      width: 0.75in;
+      height: 0.75in;
+    }
+    
+    .price-preview-slogan {
+      position: absolute;
+      left: 14px;
+      right: 1.05in;
+      bottom: 12px;
+      padding: 4px 8px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    
+    .price-preview-itemno {
+      position: absolute;
+      bottom: 12px;
+      right: 16px;
+      font-style: italic;
+      color: #333;
+    }
+    
+    @media (max-width: 900px) {
+      .price-product-selectors,
+      .price-element-editor-grid {
+        grid-template-columns: 1fr;
+      }
+    }
     
     @media print {
       body * {
@@ -957,166 +1088,39 @@
 
   <div id="priceTags" class="tab-section">
     <div class="card">
-      <h2>Price Tag Builder</h2>
-  
-      <div class="row">
-        <div>
-          <label for="priceTagCount">How many tags?</label>
-          <select id="priceTagCount">
-            <option value="1">1 Tag</option>
-            <option value="2">2 Tags</option>
-            <option value="3">3 Tags</option>
-            <option value="4">4 Tags</option>
-          </select>
-        </div>
-  
-        <div>
-          <button class="primary" onclick="generatePriceTagBuilders()">Generate Tags</button>
-        </div>
-      </div>
-    </div>
-  
-    <div class="card">
       <div class="preview-header">
-        <h2>Live Preview</h2>
-      
-        <button class="primary" onclick="printPriceTags()">
-          Print Price Tags
-        </button>
+        <h2>Price Tag Designer</h2>
+        <button class="primary" onclick="printPriceTags()">Print Price Tags</button>
       </div>
-      <div class="table-scroll">
-        <div class="price-preview-scale-wrap">
-          <div id="priceTagPreview" class="price-preview-grid"></div>
-        </div>
-      </div>
+  
+      <label for="priceTagCount">How many tags?</label>
+      <select id="priceTagCount" onchange="generateVisualPriceTags()">
+        <option value="1">1 Tag</option>
+        <option value="2">2 Tags</option>
+        <option value="3">3 Tags</option>
+        <option value="4">4 Tags</option>
+      </select>
+  
+      <div id="priceTagProductSelectors" class="price-product-selectors"></div>
     </div>
   
     <div class="card">
-      <h2>Tag Editor</h2>
+      <h2>Live Preview</h2>
   
-      <div class="price-editor-shell">
-        <div class="price-tag-list" id="priceTagList"></div>
-  
-        <div class="price-editor-main">
-          <h3 id="selectedPriceTagTitle">Select a tag to edit</h3>
-  
-          <div class="price-editor-grid">
-            <div>
-              <label>Search Product</label>
-              <div class="price-tag-search-wrap">
-                <input id="priceTagSearchInput" placeholder="Search by item no. or description..." oninput="showSelectedPriceTagSuggestions(this.value)" autocomplete="off" />
-                <div id="selectedPriceTagSuggestions" class="price-tag-suggestions"></div>
-              </div>
-            </div>
-  
-            <div>
-              <label>Item No.</label>
-              <input id="priceTagItemNo" class="readonly-field" readonly />
-            </div>
-  
-            <div>
-              <label>Product Name</label>
-              <input id="priceTagProductName" oninput="updateSelectedPriceTag('productName', this.value)" />
-            </div>
-  
-            <div>
-              <label>Product Type</label>
-              <input id="priceTagProductType" oninput="updateSelectedPriceTag('productType', this.value)" />
-            </div>
-  
-            <div>
-              <label>Product Size</label>
-              <input id="priceTagProductSize" oninput="updateSelectedPriceTag('productSize', this.value)" />
-            </div>
-  
-            <div>
-              <label>Price</label>
-              <input id="priceTagPrice" type="number" step="0.01" oninput="updateSelectedPriceTag('price', this.value)" />
-            </div>
-  
-            <div>
-              <label>Image URL</label>
-              <input id="priceTagImageUrl" oninput="updateSelectedPriceTag('imageUrl', this.value)" />
-            </div>
-
-            <div>
-              <label>Upload Product Image</label>
-              <input id="priceTagImageUpload" type="file" accept="image/*" onchange="uploadPriceTagImage(this.files[0])" />
-            </div>
-
-            <div>
-              <label>Image Zoom</label>
-              <input id="priceTagObjectZoom" type="range" min="50" max="200" value="100" oninput="updateSelectedPriceTag('objectZoom', this.value)" />
-            </div>
-            
-            <div>
-              <label>Image Horizontal Position</label>
-              <input id="priceTagObjectPositionX" type="range" min="0" max="100" value="50" oninput="updateSelectedPriceTag('objectPositionX', this.value)" />
-            </div>
-            
-            <div>
-              <label>Image Vertical Position</label>
-              <input id="priceTagObjectPositionY" type="range" min="0" max="100" value="50" oninput="updateSelectedPriceTag('objectPositionY', this.value)" />
-            </div>
-            
-            <div>
-              <label>Product Website URL</label>
-              <input id="priceTagProductUrl" oninput="updateProductUrlForSelectedTag(this.value)" />
-            </div>
-  
-            <div>
-              <label>Optional Slogan</label>
-              <input id="priceTagSlogan" oninput="updateSelectedPriceTag('slogan', this.value)" />
-            </div>
-  
-            <div class="price-editor-color-row">
-              <div>
-                <label>Slogan Background</label>
-                <input id="priceTagSloganBg" type="color" oninput="updateSelectedPriceTag('sloganBg', this.value)" />
-              </div>
-  
-              <div>
-                <label>Slogan Text Color</label>
-                <input id="priceTagSloganColor" type="color" oninput="updateSelectedPriceTag('sloganColor', this.value)" />
-              </div>
-            </div>
-
-            <div class="price-editor-actions">
-              <button class="secondary" onclick="loadSavedPriceTagSettings()">
-                Check for Previously Saved Settings
-              </button>
-            
-              <button id="saveTagSettingsBtn" class="secondary" onclick="saveSelectedPriceTagSettings()">
-                <span id="saveTagSettingsSpinner" class="mini-spinner" style="display:none;"></span>
-                Save Tag Settings
-              </button>
-            </div>
-          </div>
-        </div>
-  
-        <div class="price-editor-fonts">
-          <h3>Font Sizes</h3>
-  
-          <label>Product Name</label>
-          <input id="priceTagNameFont" type="number" oninput="updateSelectedPriceTag('nameFont', this.value)" />
-  
-          <label>Product Type</label>
-          <input id="priceTagTypeFont" type="number" oninput="updateSelectedPriceTag('typeFont', this.value)" />
-  
-          <label>Product Size</label>
-          <input id="priceTagSizeFont" type="number" oninput="updateSelectedPriceTag('sizeFont', this.value)" />
-  
-          <label>Price</label>
-          <input id="priceTagPriceFont" type="number" oninput="updateSelectedPriceTag('priceFont', this.value)" />
-  
-          <label>Item No.</label>
-          <input id="priceTagItemNoFont" type="number" oninput="updateSelectedPriceTag('itemNoFont', this.value)" />
-  
-          <label>Slogan</label>
-          <input id="priceTagSloganFont" type="number" oninput="updateSelectedPriceTag('sloganFont', this.value)" />
-        </div>
+      <div class="price-preview-scale-wrap">
+        <div id="priceTagPreview" class="price-preview-grid"></div>
       </div>
     </div>
+  
+    <div id="priceElementEditor" class="card" style="display:none;">
+      <div class="preview-header">
+        <h2 id="priceElementEditorTitle">Edit Element</h2>
+        <button class="danger small-btn" onclick="closePriceElementEditor()">Close</button>
+      </div>
+  
+      <div id="priceElementEditorBody"></div>
+    </div>
+  
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1140,6 +1144,7 @@ let inventoryEntryScanner = null;
 let inventoryReportData = [];
 let priceTags = [];
 let selectedPriceTagIndex = 0;
+let selectedPriceElement = "";
 let priceTagSettings = {};
 
 window.onload = async function () {
@@ -3126,23 +3131,116 @@ function createBlankPriceTag() {
     productSize: "",
     price: 0,
     imageUrl: "",
-    qrDataUrl: "",
     imageSource: "url",
     productUrl: "",
+    qrDataUrl: "",
     slogan: "",
     sloganBg: "#ffffff",
     sloganColor: "#000000",
+    objectPositionX: 50,
+    objectPositionY: 50,
+    objectZoom: 100,
     nameFont: 60,
     typeFont: 35,
     sizeFont: 26,
     priceFont: 125,
     itemNoFont: 16,
-    sloganFont: 24,
-    objectPositionX: 50,
-    objectPositionY: 50,
-    objectZoom: 100
+    sloganFont: 24
   };
 }
+
+function generateVisualPriceTags() {
+  const count = Number(document.getElementById("priceTagCount").value || 1);
+
+  priceTags = [];
+
+  for (let i = 0; i < count; i++) {
+    priceTags.push(createBlankPriceTag());
+  }
+
+  renderPriceTagProductSelectors();
+  renderPriceTagPreview();
+  closePriceElementEditor();
+}
+
+function renderPriceTagProductSelectors() {
+  const container = document.getElementById("priceTagProductSelectors");
+  container.innerHTML = "";
+
+  priceTags.forEach((tag, index) => {
+    const div = document.createElement("div");
+    div.className = "price-product-selector";
+
+    div.innerHTML = `
+      <label>Tag ${index + 1} Product</label>
+      <div class="price-tag-search-wrap">
+        <input 
+          value="${tag.productName || ""}"
+          placeholder="Search inventory..."
+          oninput="showVisualPriceTagSuggestions(${index}, this.value)"
+          autocomplete="off"
+        />
+        <div id="visualPriceTagSuggestions-${index}" class="price-tag-suggestions"></div>
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function showVisualPriceTagSuggestions(index, query) {
+  const box = document.getElementById(`visualPriceTagSuggestions-${index}`);
+  box.innerHTML = "";
+
+  const search = String(query || "").toLowerCase().trim();
+
+  priceTags[index].productName = query;
+  renderPriceTagPreview();
+
+  if (!search) {
+    box.style.display = "none";
+    return;
+  }
+
+  const matches = inventory.filter(item =>
+    String(item.itemNo || "").toLowerCase().includes(search) ||
+    String(item.description || "").toLowerCase().includes(search)
+  ).slice(0, 20);
+
+  if (!matches.length) {
+    box.style.display = "none";
+    return;
+  }
+
+  matches.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "price-tag-suggestion-item";
+    div.textContent = `${item.itemNo} - ${item.description}`;
+    div.onmousedown = e => {
+      e.preventDefault();
+      selectVisualPriceTagProduct(index, item);
+    };
+    box.appendChild(div);
+  });
+
+  box.style.display = "block";
+}
+
+function selectVisualPriceTagProduct(index, item) {
+  const tag = priceTags[index];
+
+  tag.itemNo = item.itemNo || "";
+  tag.productName = item.description || "";
+  tag.price = Number(item.basePrice || 0);
+
+  const box = document.getElementById(`visualPriceTagSuggestions-${index}`);
+  if (box) box.style.display = "none";
+
+  renderPriceTagProductSelectors();
+  renderPriceTagPreview();
+}
+
+
 
 function renderPriceTagList() {
   const list = document.getElementById("priceTagList");
@@ -3226,7 +3324,7 @@ async function updateSelectedPriceTag(field, value) {
 function generatePriceTagQR(index) {
   const tag = priceTags[index];
 
-  if (!tag || !tag.productUrl || !tag.productUrl.trim()) {
+  if (!tag.productUrl || !tag.productUrl.trim()) {
     tag.qrDataUrl = "";
     return;
   }
@@ -3234,6 +3332,10 @@ function generatePriceTagQR(index) {
   tag.qrDataUrl =
     "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" +
     encodeURIComponent(tag.productUrl.trim());
+}
+
+function closePriceElementEditor() {
+  document.getElementById("priceElementEditor").style.display = "none";
 }
   
 function showSelectedPriceTagSuggestions(query) {
@@ -3594,16 +3696,16 @@ function renderPriceTagPreview() {
   preview.innerHTML = "";
 
   if (!priceTags.length) {
-    preview.innerHTML = `<p class="muted">Generate price tags to preview them here.</p>`;
+    preview.innerHTML = `<p class="muted">Select how many tags to create.</p>`;
     return;
   }
 
-  priceTags.forEach(tag => {
+  priceTags.forEach((tag, index) => {
     const card = document.createElement("div");
     card.className = "price-preview-card";
 
     card.innerHTML = `
-      <div class="price-preview-image">
+      <div class="price-preview-image price-clickable" onclick="openPriceElementEditor(${index}, 'image')">
         ${
           tag.imageUrl
             ? `<img 
@@ -3625,37 +3727,45 @@ function renderPriceTagPreview() {
       </div>
 
       <div class="price-preview-info">
-        <div class="price-preview-name" style="font-size:${tag.nameFont}px;">
+        <div class="price-preview-name price-clickable" onclick="openPriceElementEditor(${index}, 'name')" style="font-size:${tag.nameFont}px;">
           ${tag.productName || "Product Name"}
         </div>
 
-        <div class="price-preview-type" style="font-size:${tag.typeFont}px;">
+        <div class="price-preview-type price-clickable" onclick="openPriceElementEditor(${index}, 'type')" style="font-size:${tag.typeFont}px;">
           ${tag.productType || "Product Type"}
         </div>
 
-        <div class="price-preview-size" style="font-size:${tag.sizeFont}px;">
+        <div class="price-preview-size price-clickable" onclick="openPriceElementEditor(${index}, 'size')" style="font-size:${tag.sizeFont}px;">
           ${tag.productSize || "Product Size"}
         </div>
 
-        <div class="price-preview-price" style="font-size:${tag.priceFont}px;">
+        <div class="price-preview-price price-clickable" onclick="openPriceElementEditor(${index}, 'price')" style="font-size:${tag.priceFont}px;">
           $${Number(tag.price || 0).toFixed(2)}
         </div>
 
         ${
           tag.qrDataUrl
-            ? `<img class="price-preview-qr" src="${tag.qrDataUrl}" alt="QR Code">`
-            : `<div class="price-preview-qr">QR<br>Code</div>`
+            ? `<img class="price-preview-qr price-clickable" onclick="openPriceElementEditor(${index}, 'qr')" src="${tag.qrDataUrl}">`
+            : `<div class="price-preview-qr price-clickable" onclick="openPriceElementEditor(${index}, 'qr')">QR<br>Code</div>`
         }
 
         ${
           tag.slogan
-            ? `<div class="price-preview-slogan" style="background:${tag.sloganBg}; color:${tag.sloganColor}; font-size:${tag.sloganFont}px;">
-                ${tag.slogan}
-              </div>`
-            : ""
+            ? `<div class="price-preview-slogan price-clickable"
+                  onclick="openPriceElementEditor(${index}, 'slogan')"
+                  style="
+                    background:${tag.sloganBg};
+                    color:${tag.sloganColor};
+                    font-size:${tag.sloganFont}px;
+                  ">
+                  ${tag.slogan}
+               </div>`
+            : `<div class="price-preview-slogan price-clickable" onclick="openPriceElementEditor(${index}, 'slogan')">
+                Slogan
+               </div>`
         }
 
-        <div class="price-preview-itemno" style="font-size:${tag.itemNoFont}px;">
+        <div class="price-preview-itemno price-clickable" onclick="openPriceElementEditor(${index}, 'itemNo')" style="font-size:${tag.itemNoFont}px;">
           ${tag.itemNo || ""}
         </div>
       </div>
@@ -3665,6 +3775,158 @@ function renderPriceTagPreview() {
   });
 }
 
+function openPriceElementEditor(index, element) {
+  selectedPriceTagIndex = index;
+  selectedPriceElement = element;
+
+  const tag = priceTags[index];
+  const editor = document.getElementById("priceElementEditor");
+  const title = document.getElementById("priceElementEditorTitle");
+  const body = document.getElementById("priceElementEditorBody");
+
+  editor.style.display = "block";
+  title.textContent = `Edit Tag ${index + 1}: ${element}`;
+
+  if (element === "image") {
+    body.innerHTML = `
+      <div class="price-element-editor-grid">
+        <div>
+          <label>Image URL</label>
+          <input value="${tag.imageUrl || ""}" oninput="updateVisualTag('imageUrl', this.value)" />
+        </div>
+
+        <div>
+          <label>Upload Product Image</label>
+          <input type="file" accept="image/*" onchange="uploadVisualPriceTagImage(this.files[0])" />
+        </div>
+
+        <div>
+          <label>Image Zoom</label>
+          <input type="range" min="50" max="200" value="${tag.objectZoom}" oninput="updateVisualTag('objectZoom', this.value)" />
+        </div>
+
+        <div>
+          <label>Horizontal Position</label>
+          <input type="range" min="0" max="100" value="${tag.objectPositionX}" oninput="updateVisualTag('objectPositionX', this.value)" />
+        </div>
+
+        <div>
+          <label>Vertical Position</label>
+          <input type="range" min="0" max="100" value="${tag.objectPositionY}" oninput="updateVisualTag('objectPositionY', this.value)" />
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  if (element === "qr") {
+    body.innerHTML = `
+      <label>Product Website URL</label>
+      <input value="${tag.productUrl || ""}" oninput="updateVisualProductUrl(this.value)" />
+    `;
+    return;
+  }
+
+  if (element === "slogan") {
+    body.innerHTML = `
+      <div class="price-element-editor-grid">
+        <div>
+          <label>Slogan Text</label>
+          <input value="${tag.slogan || ""}" oninput="updateVisualTag('slogan', this.value)" />
+        </div>
+
+        <div>
+          <label>Slogan Font Size</label>
+          <input type="number" value="${tag.sloganFont}" oninput="updateVisualTag('sloganFont', this.value)" />
+        </div>
+
+        <div>
+          <label>Background Color</label>
+          <input type="color" value="${tag.sloganBg}" oninput="updateVisualTag('sloganBg', this.value)" />
+        </div>
+
+        <div>
+          <label>Text Color</label>
+          <input type="color" value="${tag.sloganColor}" oninput="updateVisualTag('sloganColor', this.value)" />
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const fieldMap = {
+    name: ["productName", "nameFont", "Product Name"],
+    type: ["productType", "typeFont", "Product Type"],
+    size: ["productSize", "sizeFont", "Product Size"],
+    price: ["price", "priceFont", "Price"],
+    itemNo: ["itemNo", "itemNoFont", "Item No."]
+  };
+
+  const [textField, fontField, label] = fieldMap[element];
+
+  body.innerHTML = `
+    <div class="price-element-editor-grid">
+      <div>
+        <label>${label}</label>
+        <input value="${tag[textField] || ""}" oninput="updateVisualTag('${textField}', this.value)" />
+      </div>
+
+      <div>
+        <label>Font Size</label>
+        <input type="number" value="${tag[fontField]}" oninput="updateVisualTag('${fontField}', this.value)" />
+      </div>
+    </div>
+  `;
+}
+
+function updateVisualTag(field, value) {
+  const numericFields = [
+    "price",
+    "nameFont",
+    "typeFont",
+    "sizeFont",
+    "priceFont",
+    "itemNoFont",
+    "sloganFont",
+    "objectZoom",
+    "objectPositionX",
+    "objectPositionY"
+  ];
+
+  priceTags[selectedPriceTagIndex][field] = numericFields.includes(field)
+    ? Number(value || 0)
+    : value;
+
+  if (field === "imageUrl") {
+    priceTags[selectedPriceTagIndex].imageSource = "url";
+  }
+
+  renderPriceTagPreview();
+}
+
+function updateVisualProductUrl(value) {
+  const tag = priceTags[selectedPriceTagIndex];
+
+  tag.productUrl = value;
+  generatePriceTagQR(selectedPriceTagIndex);
+  renderPriceTagPreview();
+}
+
+function uploadVisualPriceTagImage(file) {
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    const tag = priceTags[selectedPriceTagIndex];
+    tag.imageUrl = e.target.result;
+    tag.imageSource = "upload";
+    renderPriceTagPreview();
+  };
+
+  reader.readAsDataURL(file);
+}
+  
 function printPriceTags() {
   if (!priceTags.length) {
     alert("Please generate at least one price tag.");
