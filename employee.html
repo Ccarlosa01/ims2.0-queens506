@@ -1126,6 +1126,13 @@
         <option value="3">3 Tags</option>
         <option value="4">4 Tags</option>
       </select>
+      
+      <div style="margin-top:14px;">
+        <label style="display:flex; align-items:center; gap:10px; font-weight:normal;">
+          <input type="checkbox" id="autoLoadTagSettingsToggle" checked />
+          Auto-load saved settings when product selected
+        </label>
+      </div>
   
       <div id="priceTagProductSelectors" class="price-product-selectors"></div>
     </div>
@@ -3271,6 +3278,36 @@ function selectVisualPriceTagProduct(index, item) {
   tag.productName = item.description || "";
   tag.price = Number(item.basePrice || 0);
 
+  // AUTO LOAD SETTINGS
+  if (shouldAutoLoadPriceTagSettings()) {
+    const saved = priceTagSettings[tag.itemNo];
+
+    if (saved) {
+      tag.imageUrl = saved.imageUrl || "";
+      tag.objectPositionX = saved.objectPositionX || 50;
+      tag.objectPositionY = saved.objectPositionY || 50;
+      tag.objectZoom = saved.objectZoom || 100;
+
+      tag.productName = saved.productName || tag.productName;
+      tag.productType = saved.productType || "";
+      tag.productSize = saved.productSize || "";
+      tag.productUrl = saved.productUrl || "";
+
+      tag.nameFont = saved.nameFont || 48;
+      tag.typeFont = saved.typeFont || 28;
+      tag.sizeFont = saved.sizeFont || 22;
+      tag.priceFont = saved.priceFont || 112;
+      tag.itemNoFont = saved.itemNoFont || 16;
+      tag.sloganFont = saved.sloganFont || 24;
+
+      tag.slogan = saved.slogan || "";
+      tag.sloganBg = saved.sloganBg || "#ffffff";
+      tag.sloganColor = saved.sloganColor || "#000000";
+
+      generatePriceTagQR(index);
+    }
+  }
+
   const box = document.getElementById(`visualPriceTagSuggestions-${index}`);
   if (box) box.style.display = "none";
 
@@ -3614,6 +3651,11 @@ function updateProductUrlForSelectedTag(value) {
   priceTags[selectedPriceTagIndex].productUrl = value;
   generatePriceTagQR(selectedPriceTagIndex);
   renderPriceTagPreview();
+}
+
+function shouldAutoLoadPriceTagSettings() {
+  const toggle = document.getElementById("autoLoadTagSettingsToggle");
+  return toggle ? toggle.checked : false;
 }
 
 async function loadPriceTagSettings() {
