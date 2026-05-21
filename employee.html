@@ -1127,18 +1127,11 @@
         <option value="4">4 Tags</option>
       </select>
       
-      <div style="margin-top:14px;">
-        <label style="display:flex; align-items:center; gap:10px; font-weight:normal;">
-          <input type="checkbox" id="autoLoadTagSettingsToggle" checked />
-          Auto-load saved settings when product selected
-        </label>
-      </div>
+      <p class="muted" style="margin-top:12px;">
+        Preset settings, if available, will auto-load after product is selected.
+      </p>
 
-      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="secondary" onclick="loadSavedPriceTagSettings()">
-          Check for Previously Saved Settings
-        </button>
-      
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">     
         <button id="saveTagSettingsBtn" class="primary" onclick="saveSelectedPriceTagSettings()">
           <span id="saveTagSettingsSpinner" class="mini-spinner" style="display:none;"></span>
           Save Current Tag Settings
@@ -3285,47 +3278,57 @@ function showVisualPriceTagSuggestions(index, query) {
 function selectVisualPriceTagProduct(index, item) {
   const tag = priceTags[index];
 
+  // KEEP SEARCH BOX LABEL
+  tag.searchDisplay = item.description || "";
+
+  // BASIC INVENTORY INFO
   tag.itemNo = item.itemNo || "";
-  tag.productName = item.description || "";
   tag.price = Number(item.basePrice || 0);
 
-  // AUTO LOAD SETTINGS
-  if (shouldAutoLoadPriceTagSettings()) {
-    const saved = priceTagSettings[tag.itemNo];
+  // DEFAULT PRODUCT NAME FROM INVENTORY
+  tag.productName = item.description || "";
 
-    if (saved) {
-      tag.imageUrl = saved.imageUrl || "";
-      tag.objectPositionX = saved.objectPositionX || 50;
-      tag.objectPositionY = saved.objectPositionY || 50;
-      tag.objectZoom = saved.objectZoom || 100;
+  // AUTO LOAD SAVED SETTINGS
+  const saved = priceTagSettings[tag.itemNo];
 
-      tag.productName = saved.productName || tag.productName;
-      tag.productType = saved.productType || "";
-      tag.productSize = saved.productSize || "";
-      tag.productUrl = saved.productUrl || "";
+  if (saved) {
 
-      tag.nameFont = saved.nameFont || 48;
-      tag.typeFont = saved.typeFont || 28;
-      tag.sizeFont = saved.sizeFont || 22;
-      tag.priceFont = saved.priceFont || 112;
-      tag.itemNoFont = saved.itemNoFont || 16;
-      tag.sloganFont = saved.sloganFont || 24;
+    // IMPORTANT:
+    // DO NOT overwrite searchDisplay
+    // DO NOT overwrite selected dropdown text
 
-      tag.slogan = saved.slogan || "";
-      tag.sloganBg = saved.sloganBg || "#ffffff";
-      tag.sloganColor = saved.sloganColor || "#000000";
+    tag.imageUrl = saved.imageUrl || "";
+    tag.objectPositionX = saved.objectPositionX || 50;
+    tag.objectPositionY = saved.objectPositionY || 50;
+    tag.objectZoom = saved.objectZoom || 100;
 
-      generatePriceTagQR(index);
-    }
+    tag.productName = saved.productName || tag.productName;
+    tag.productType = saved.productType || "";
+    tag.productSize = saved.productSize || "";
+    tag.productUrl = saved.productUrl || "";
+
+    tag.nameFont = saved.nameFont || 48;
+    tag.typeFont = saved.typeFont || 28;
+    tag.sizeFont = saved.sizeFont || 22;
+    tag.priceFont = saved.priceFont || 112;
+    tag.itemNoFont = saved.itemNoFont || 16;
+    tag.sloganFont = saved.sloganFont || 24;
+
+    tag.slogan = saved.slogan || "";
+    tag.sloganBg = saved.sloganBg || "#ffffff";
+    tag.sloganColor = saved.sloganColor || "#000000";
+
+    generatePriceTagQR(index);
   }
 
   const box = document.getElementById(`visualPriceTagSuggestions-${index}`);
-  if (box) box.style.display = "none";
+  if (box) {
+    box.style.display = "none";
+  }
 
   renderPriceTagProductSelectors();
   renderPriceTagPreview();
 }
-
 
 
 function renderPriceTagList() {
@@ -3480,7 +3483,7 @@ function renderPriceTagEditors() {
       <label>Search Product</label>
       <div class="price-tag-search-wrap">
         <input 
-          value="${tag.productName || ""}" 
+          value="${tag.searchDisplay || ""}"
           placeholder="Search by description or item no..."
           oninput="showPriceTagSuggestions(${index}, this.value)"
           autocomplete="off"
@@ -3662,11 +3665,6 @@ function updateProductUrlForSelectedTag(value) {
   priceTags[selectedPriceTagIndex].productUrl = value;
   generatePriceTagQR(selectedPriceTagIndex);
   renderPriceTagPreview();
-}
-
-function shouldAutoLoadPriceTagSettings() {
-  const toggle = document.getElementById("autoLoadTagSettingsToggle");
-  return toggle ? toggle.checked : false;
 }
 
 async function loadPriceTagSettings() {
