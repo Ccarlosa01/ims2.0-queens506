@@ -1239,10 +1239,13 @@
   
       <label>Product(s)</label>
       <input id="tastingProducts" placeholder="Example: Jim Beam, Maker's Mark, Hornitos" />
-  
+      
       <label>Notes</label>
       <input id="tastingNotes" placeholder="Optional notes..." />
-  
+      
+      <label>Image URL (Optional)</label>
+      <input id="tastingImageUrl" placeholder="Include a Branded Image for Store Tasting Calendar" />
+      
       <button class="primary" onclick="saveTasting()">Book Tasting</button>
   
       <div id="tastingMessage" class="message"></div>
@@ -1273,6 +1276,10 @@
       <button id="refreshTastingsBtn" class="secondary" onclick="loadTastings()">
         <span id="refreshTastingsSpinner" class="mini-spinner" style="display:none;"></span>
         Refresh Tastings
+      </button>
+
+      <button class="secondary" onclick="downloadTastingsCSV()">
+        Download CSV
       </button>
   
       <div id="tastingListView">
@@ -4549,6 +4556,7 @@ async function saveTasting() {
   const timeSlot = `${timeFrom} - ${timeTo}`;
   const products = document.getElementById("tastingProducts").value.trim();
   const notes = document.getElementById("tastingNotes").value.trim();
+  const imageUrl = document.getElementById("tastingImageUrl").value.trim();
 
   if (!dateReserved || !timeFrom || !timeTo || !products) {
     showMessage("tastingMessage", "Date Reserved, Time Slot, and Product(s) are required.", "error");
@@ -4564,6 +4572,7 @@ async function saveTasting() {
         action: "saveTasting",
         dateReserved,
         timeSlot,
+        imageUrl,
         products,
         notes,
         createdBy: currentUser.name || currentUser.username || ""
@@ -4580,6 +4589,7 @@ async function saveTasting() {
       document.getElementById("tastingTimeTo").value = "";
       document.getElementById("tastingProducts").value = "";
       document.getElementById("tastingNotes").value = "";
+      document.getElementById("tastingImageUrl").value = "";
 
       await loadTastings();
     } else {
@@ -4967,7 +4977,83 @@ async function downloadMonthlyTastingPDF() {
 
   pdf.save(`${getMonthName(month).toLowerCase()}-${year}-tastings.pdf`);
 }
-  
+
+function convertToCSVDate(dateReserved, timeText) {
+  const date = new Date(`${normalizeDateKey(dateReserved)} ${timeText}`);
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const ss = "00";
+
+  return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss} -0400`;
+}
+
+function downloadTastingsCSV() {
+  const tastings = getFilteredTastingsForSelectedMonth();
+
+  if (!tastings.length) {
+    showMessage("tastingMessage", "No tastings found for selected month.", "error");
+    return;
+  }
+
+  const rows = [];
+
+  rows.push([
+    "Title",
+    "Start Time",
+    "End Time",
+    "Image URL"
+  ]);
+
+  tastings.forEach(tasting => {
+    const parts = String(tasting.timeSlot || "").split(" - ");
+
+    const startTime = parts[0] || "";
+    const endTime = parts[1] || "";
+
+    rows.push([
+      tasting.products || "",
+      convertToCSVDate(tasting.dateReserved, startTime),
+      convertToCSVDate(tasting.dateReserved, endTime),
+      tasting.imageUrl || ""
+    ]);
+  });
+
+  const csvContent = rows.map(row =>
+    row.map(value =>
+      `"${String(value).replace(/"/g, '""')}"`
+    ).join(",")
+  ).join("\n");
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;"
+  });
+
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute("href", url);
+
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  link.setAttribute(
+    "download",
+    `${getMonthName(month).toLowerCase()}-${year}-tastings.csv`
+  );
+
+  link.style.visibility = "hidden";
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  document.body.removeChild(link);
+}
 </script>
 </body>
 </html>
