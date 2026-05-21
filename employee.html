@@ -1133,6 +1133,17 @@
           Auto-load saved settings when product selected
         </label>
       </div>
+
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="secondary" onclick="loadSavedPriceTagSettings()">
+          Check for Previously Saved Settings
+        </button>
+      
+        <button id="saveTagSettingsBtn" class="primary" onclick="saveSelectedPriceTagSettings()">
+          <span id="saveTagSettingsSpinner" class="mini-spinner" style="display:none;"></span>
+          Save Current Tag Settings
+        </button>
+      </div>
   
       <div id="priceTagProductSelectors" class="price-product-selectors"></div>
     </div>
