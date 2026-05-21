@@ -3224,7 +3224,7 @@ function renderPriceTagProductSelectors() {
       <label>Tag ${index + 1} Product</label>
       <div class="price-tag-search-wrap">
         <input 
-          value="${tag.productName || ""}"
+          value="${tag.searchDisplay || ""}"
           placeholder="Search inventory..."
           oninput="showVisualPriceTagSuggestions(${index}, this.value)"
           autocomplete="off"
@@ -3483,7 +3483,7 @@ function renderPriceTagEditors() {
       <label>Search Product</label>
       <div class="price-tag-search-wrap">
         <input 
-          value="${tag.searchDisplay || ""}"
+          value="${tag.productName || ""}"
           placeholder="Search by description or item no..."
           oninput="showPriceTagSuggestions(${index}, this.value)"
           autocomplete="off"
