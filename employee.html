@@ -1274,6 +1274,10 @@
         <span id="refreshTastingsSpinner" class="mini-spinner" style="display:none;"></span>
         Refresh Tastings
       </button>
+
+      <button class="primary" onclick="downloadMonthlyTastingPDF()">
+        Download Monthly Tasting PDF
+      </button>
   
       <div id="tastingListView">
         <table>
@@ -1303,9 +1307,10 @@
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwD3RhBSk8M1RccE4Ig8Z5kXF7KbfLaTCqa1Ggb4CUwYNY4YcuaJnstjQ5Y5UMkrwIYgw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQD_EbO5MTSQ8yOGoTfxV41uj-U7zLbn903QNQFlX2MnqKxD7DHnIGEl2cnqrC6gqUvw/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -4808,6 +4813,165 @@ function normalizeDateKey(value) {
   return `${year}-${month}-${day}`;
 }
 
+function buildGoogleCalendarLink(tasting) {
+  const location = "32-50 Vernon Boulevard, Queens, NY 11106";
+  const dateKey = normalizeDateKey(tasting.dateReserved);
+
+  const [start, end] = String(tasting.timeSlot || "").split(" - ");
+
+  const startDate = formatGoogleCalendarDate(dateKey, start);
+  const endDate = formatGoogleCalendarDate(dateKey, end);
+
+  const title = `${tasting.products || "Tasting"} Tasting`;
+  const details = tasting.notes || "";
+
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+    `&text=${encodeURIComponent(title)}` +
+    `&dates=${startDate}/${endDate}` +
+    `&details=${encodeURIComponent(details)}` +
+    `&location=${encodeURIComponent(location)}`;
+}
+
+function buildICSLink(tasting) {
+  const location = "32-50 Vernon Boulevard, Queens, NY 11106";
+  const dateKey = normalizeDateKey(tasting.dateReserved);
+  const [start, end] = String(tasting.timeSlot || "").split(" - ");
+
+  return SCRIPT_URL +
+    `?action=downloadICS` +
+    `&title=${encodeURIComponent((tasting.products || "Tasting") + " Tasting")}` +
+    `&date=${encodeURIComponent(dateKey)}` +
+    `&start=${encodeURIComponent(start || "")}` +
+    `&end=${encodeURIComponent(end || "")}` +
+    `&details=${encodeURIComponent((tasting.notes || "") + "\\nLocation: " + location)}`;
+}
+
+function formatGoogleCalendarDate(dateKey, timeText) {
+  const date = new Date(`${dateKey} ${timeText}`);
+
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+
+  return `${yyyy}${mm}${dd}T${hh}${min}00`;
+}
+
+function getMonthName(monthIndex) {
+  return [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ][monthIndex];
+}
+
+function groupTastingsByDate(tastings) {
+  const grouped = {};
+
+  tastings.forEach(tasting => {
+    const key = normalizeDateKey(tasting.dateReserved);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(tasting);
+  });
+
+  return grouped;
+}
+
+async function downloadMonthlyTastingPDF() {
+  if (!tastingsData.length) {
+    await loadTastings();
+  }
+
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  const filtered = getFilteredTastingsForSelectedMonth()
+    .sort((a, b) => normalizeDateKey(a.dateReserved).localeCompare(normalizeDateKey(b.dateReserved)));
+
+  if (!filtered.length) {
+    showMessage("tastingMessage", "No tastings found for the selected month.", "error");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("p", "pt", "letter");
+
+  const margin = 48;
+  let y = 60;
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(24);
+  pdf.text(`${getMonthName(month)}'s Tasting`, margin, y);
+
+  y += 32;
+
+  const grouped = groupTastingsByDate(filtered);
+  const dateKeys = Object.keys(grouped).sort();
+
+  dateKeys.forEach(dateKey => {
+    if (y > 700) {
+      pdf.addPage();
+      y = 60;
+    }
+
+    const dateLabel = formatDateOnly(dateKey);
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text(dateLabel, margin, y);
+
+    y += 22;
+
+    grouped[dateKey].forEach(tasting => {
+      if (y > 700) {
+        pdf.addPage();
+        y = 60;
+      }
+
+      const googleLink = buildGoogleCalendarLink(tasting);
+      const icsLink = buildICSLink(tasting);
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(13);
+      pdf.text(tasting.products || "Tasting", margin + 18, y);
+
+      y += 17;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(12);
+      pdf.text(tasting.timeSlot || "", margin + 18, y);
+
+      y += 17;
+
+      if (tasting.notes) {
+        pdf.setFontSize(10);
+        pdf.text(`Notes: ${tasting.notes}`, margin + 18, y);
+        y += 15;
+      }
+
+      pdf.setTextColor(31, 94, 255);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(11);
+
+      pdf.textWithLink("Add to Google Calendar", margin + 18, y, {
+        url: googleLink
+      });
+
+      pdf.textWithLink("Download .ics", margin + 170, y, {
+        url: icsLink
+      });
+
+      pdf.setTextColor(0, 0, 0);
+
+      y += 28;
+    });
+
+    y += 10;
+  });
+
+  pdf.save(`${getMonthName(month).toLowerCase()}-${year}-tastings.pdf`);
+}
+  
 </script>
 </body>
 </html>
