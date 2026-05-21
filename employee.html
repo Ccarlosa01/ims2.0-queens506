@@ -498,6 +498,43 @@
     .floating-price-editor label {
       margin-top: 10px;
     }
+
+    .tasting-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 18px;
+    }
+    
+    .tasting-day-header {
+      font-weight: bold;
+      background: #f4f6f8;
+      padding: 10px;
+      text-align: center;
+      border-radius: 8px;
+    }
+    
+    .tasting-day {
+      min-height: 110px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 8px;
+      background: white;
+    }
+    
+    .tasting-day-number {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    
+    .tasting-event {
+      background: #e9eefc;
+      color: #1f5eff;
+      padding: 6px;
+      border-radius: 7px;
+      font-size: 12px;
+      margin-top: 5px;
+    }
     
     @media (max-width: 900px) {
       .price-product-selectors,
@@ -643,9 +680,12 @@
     <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
     <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
     <button class="tab-btn" onclick="showTab('customerOrder', this)">Customer Order</button>
-    <button class="tab-btn" onclick="showTab('inventoryEntry', this)">Inventory Entry</button>
     <button class="tab-btn" onclick="showTab('priceTags', this)">Price Tags</button>
-
+    <button class="tab-btn" onclick="showTab('tastings', this)">Tastings</button>
+    
+    
+    <button class="tab-btn" onclick="showTab('inventoryEntry', this)">Inventory Entry</button>
+    
     <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
       Inventory Upload
     </button>
@@ -1172,13 +1212,88 @@
     <div id="floatingPriceEditorBody"></div>
   </div>
 
+  <div id="tastings" class="tab-section">
+    <div class="card">
+      <h2>Book Tasting</h2>
+  
+      <div class="row">
+        <div>
+          <label>Date Reserved</label>
+          <input type="date" id="tastingDate" />
+        </div>
+  
+        <div>
+          <label>Time Slot</label>
+          <input id="tastingTime" placeholder="Example: 2:00 PM - 4:00 PM" />
+        </div>
+      </div>
+  
+      <label>Product(s)</label>
+      <input id="tastingProducts" placeholder="Example: Jim Beam, Maker's Mark, Hornitos" />
+  
+      <label>Notes</label>
+      <input id="tastingNotes" placeholder="Optional notes..." />
+  
+      <button class="primary" onclick="saveTasting()">Book Tasting</button>
+  
+      <div id="tastingMessage" class="message"></div>
+    </div>
+  
+    <div class="card">
+      <div class="preview-header">
+        <h2>Tasting Schedule</h2>
+  
+        <div>
+          <button class="secondary" onclick="showTastingListView()">List View</button>
+          <button class="secondary" onclick="showTastingCalendarView()">Calendar View</button>
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label>Month</label>
+          <select id="tastingMonth" onchange="renderTastings()"></select>
+        </div>
+  
+        <div>
+          <label>Year</label>
+          <input type="number" id="tastingYear" onchange="renderTastings()" />
+        </div>
+      </div>
+  
+      <button class="secondary" onclick="loadTastings()">Refresh Tastings</button>
+  
+      <div id="tastingListView">
+        <table>
+          <thead>
+            <tr>
+              <th>Date Reserved</th>
+              <th>Time Slot</th>
+              <th>Product(s)</th>
+              <th>Notes</th>
+              <th>Created By</th>
+            </tr>
+          </thead>
+          <tbody id="tastingTableBody">
+            <tr><td colspan="5">No tastings loaded.</td></tr>
+          </tbody>
+        </table>
+      </div>
+  
+      <div id="tastingCalendarView" style="display:none;">
+        <div id="tastingCalendar" class="tasting-calendar"></div>
+      </div>
+    </div>
+  
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx7A-t_yyPqHL6GqZw2WD2IWRAviDBYrtU8gSLtQyqmfwAdzEYSSu4LGFgKzon8JI9Rrg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwD3RhBSk8M1RccE4Ig8Z5kXF7KbfLaTCqa1Ggb4CUwYNY4YcuaJnstjQ5Y5UMkrwIYgw/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1195,6 +1310,8 @@ let priceTags = [];
 let selectedPriceTagIndex = 0;
 let selectedPriceElement = "";
 let priceTagSettings = {};
+let tastingsData = [];
+let tastingViewMode = "list";
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -1225,6 +1342,8 @@ window.onload = async function () {
   document.getElementById("userInfo").textContent =
     `Logged in as ${currentUser.name} | ${currentUser.role}`;
 
+  setupTastingMonthYear();
+  await loadTastings();
   await loadMaxPallets();
   await loadInventory();
   await loadBreakers();
@@ -1760,7 +1879,8 @@ function clearAllMessages() {
     "inventoryEntryProductInfo",
     "inventoryScannerMessage",
     "barcodeUploadMessage",
-    "inventoryReportMessage"
+    "inventoryReportMessage",
+    "tastingMessage"
   ];
 
   messageIds.forEach(id => {
@@ -4382,6 +4502,228 @@ function generatePrintTagHTML() {
 
   return html;
 }
+
+function setupTastingMonthYear() {
+  const monthSelect = document.getElementById("tastingMonth");
+  const yearInput = document.getElementById("tastingYear");
+
+  if (!monthSelect || !yearInput) return;
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  monthSelect.innerHTML = "";
+
+  months.forEach((month, index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = month;
+    monthSelect.appendChild(option);
+  });
+
+  const today = new Date();
+  monthSelect.value = today.getMonth();
+  yearInput.value = today.getFullYear();
+}
+
+async function saveTasting() {
+  const dateReserved = document.getElementById("tastingDate").value;
+  const timeSlot = document.getElementById("tastingTime").value.trim();
+  const products = document.getElementById("tastingProducts").value.trim();
+  const notes = document.getElementById("tastingNotes").value.trim();
+
+  if (!dateReserved || !timeSlot || !products) {
+    showMessage("tastingMessage", "Date Reserved, Time Slot, and Product(s) are required.", "error");
+    return;
+  }
+
+  try {
+    showMessage("tastingMessage", "Booking tasting...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveTasting",
+        dateReserved,
+        timeSlot,
+        products,
+        notes,
+        createdBy: currentUser.name || currentUser.username || ""
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("tastingMessage", result.message, "success");
+
+      document.getElementById("tastingDate").value = "";
+      document.getElementById("tastingTime").value = "";
+      document.getElementById("tastingProducts").value = "";
+      document.getElementById("tastingNotes").value = "";
+
+      await loadTastings();
+    } else {
+      showMessage("tastingMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("tastingMessage", "Could not book tasting.", "error");
+  }
+}
+
+async function loadTastings() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getTastings`);
+    const result = await response.json();
+
+    if (result.success) {
+      tastingsData = result.tastings || [];
+      renderTastings();
+    } else {
+      showMessage("tastingMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("tastingMessage", "Could not load tastings.", "error");
+  }
+}
+
+function renderTastings() {
+  if (tastingViewMode === "calendar") {
+    renderTastingCalendar();
+  } else {
+    renderTastingList();
+  }
+}
+
+function getFilteredTastingsForSelectedMonth() {
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  return tastingsData.filter(tasting => {
+    const date = new Date(tasting.dateReserved);
+    return date.getMonth() === month && date.getFullYear() === year;
+  });
+}
+
+function renderTastingList() {
+  const tbody = document.getElementById("tastingTableBody");
+  if (!tbody) return;
+
+  const filtered = getFilteredTastingsForSelectedMonth();
+
+  tbody.innerHTML = "";
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="5">No tastings found for this month.</td></tr>`;
+    return;
+  }
+
+  filtered
+    .sort((a, b) => new Date(a.dateReserved) - new Date(b.dateReserved))
+    .forEach(tasting => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${formatDateOnly(tasting.dateReserved)}</td>
+        <td>${tasting.timeSlot || ""}</td>
+        <td>${tasting.products || ""}</td>
+        <td>${tasting.notes || ""}</td>
+        <td>${tasting.createdBy || ""}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+}
+
+function renderTastingCalendar() {
+  const calendar = document.getElementById("tastingCalendar");
+  if (!calendar) return;
+
+  const month = Number(document.getElementById("tastingMonth").value);
+  const year = Number(document.getElementById("tastingYear").value);
+
+  const filtered = getFilteredTastingsForSelectedMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+
+  const startDay = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  calendar.innerHTML = "";
+
+  dayNames.forEach(day => {
+    const div = document.createElement("div");
+    div.className = "tasting-day-header";
+    div.textContent = day;
+    calendar.appendChild(div);
+  });
+
+  for (let i = 0; i < startDay; i++) {
+    const blank = document.createElement("div");
+    blank.className = "tasting-day";
+    calendar.appendChild(blank);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cell = document.createElement("div");
+    cell.className = "tasting-day";
+
+    const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+    const events = filtered.filter(tasting => tasting.dateReserved === dateStr);
+
+    cell.innerHTML = `<div class="tasting-day-number">${day}</div>`;
+
+    events.forEach(event => {
+      const eventDiv = document.createElement("div");
+      eventDiv.className = "tasting-event";
+      eventDiv.innerHTML = `
+        <strong>${event.timeSlot || ""}</strong><br>
+        ${event.products || ""}
+      `;
+      cell.appendChild(eventDiv);
+    });
+
+    calendar.appendChild(cell);
+  }
+}
+
+function showTastingListView() {
+  tastingViewMode = "list";
+  document.getElementById("tastingListView").style.display = "block";
+  document.getElementById("tastingCalendarView").style.display = "none";
+  renderTastingList();
+}
+
+function showTastingCalendarView() {
+  tastingViewMode = "calendar";
+  document.getElementById("tastingListView").style.display = "none";
+  document.getElementById("tastingCalendarView").style.display = "block";
+  renderTastingCalendar();
+}
+
+function formatDateOnly(value) {
+  if (!value) return "";
+
+  const date = new Date(value + "T00:00:00");
+
+  if (isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-US", {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+
 
 </script>
 </body>
