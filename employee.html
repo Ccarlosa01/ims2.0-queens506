@@ -257,6 +257,12 @@
       object-fit: contain;
     }
 
+    .price-preview-preset-image.no-slogan {
+      bottom: 22px;
+      width: 1.15in;
+      height: 0.82in;
+    }
+
     .mini-spinner {
       display: inline-block;
       width: 13px;
@@ -4012,7 +4018,7 @@ function renderPriceTagPreview() {
         ${
           tag.presetImageUrl
             ? `<img 
-                class="price-preview-preset-image price-clickable" 
+                class="price-preview-preset-image ${tag.slogan ? '' : 'no-slogan'}" //class="price-preview-preset-image price-clickable" 
                 onclick="openFloatingEditor(${index}, 'presetImage', event)"
                 src="${tag.presetImageUrl}" 
                 alt="Preset Image"
@@ -4465,6 +4471,12 @@ function printPriceTags() {
           object-fit: contain;
         }
 
+        .price-preview-preset-image.no-slogan {
+          bottom: 22px;
+          width: 1.15in;
+          height: 0.82in;
+        }
+
         .price-preview-slogan {
           position: absolute;
           left: 14px;
@@ -4562,7 +4574,7 @@ function generatePrintTagHTML() {
           ${
             tag.presetImageUrl
               ? `<img 
-                  class="price-preview-preset-image" 
+                  class="price-preview-preset-image ${tag.slogan ? '' : 'no-slogan'}"
                   src="${tag.presetImageUrl}" 
                   alt="Preset Image"
                 >`
