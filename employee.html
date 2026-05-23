@@ -183,18 +183,20 @@
       padding: 10px 14px;
     }
 
-    .price-preview-name,
-    .price-preview-type,
+    .price-preview-name { font-family: Arial, sans-serif; },
+    .price-preview-type { font-family: Arial, sans-serif; },
     .price-preview-size {
+      font-family: Arial, sans-serif;
       text-align: left;
       line-height: 1.1;
       font-weight: bold;
     }
     
     .price-preview-price {
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
       margin-top: 18px;
       font-weight: bold;
-    
+      
       display: flex;
       align-items: center;
       justify-content: center;
@@ -222,6 +224,7 @@
       right: 1.05in;
       bottom: 12px;
       padding: 4px 8px;
+      font-family: Arial, sans-serif;
       font-weight: bold;
     
       display: flex;
@@ -231,11 +234,21 @@
     }
     
     .price-preview-itemno {
+      font-family: Arial, sans-serif;
       position: absolute;
       bottom: 12px;
       right: 16px;
       font-style: italic;
       color: #333;
+    }
+
+    .price-preview-preset-image {
+      position: absolute;
+      left: 14px;
+      bottom: 52px;
+      width: 0.85in;
+      height: 0.65in;
+      object-fit: contain;
     }
 
     .mini-spinner {
@@ -426,15 +439,17 @@
       overflow: hidden;
     }
     
-    .price-preview-name,
-    .price-preview-type,
+    .price-preview-name { font-family: Arial, sans-serif; },
+    .price-preview-type { font-family: Arial, sans-serif; },
     .price-preview-size {
+      font-family: Arial, sans-serif;
       text-align: left;
       line-height: 1.1;
       font-weight: bold;
     }
     
     .price-preview-price {
+      font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
       margin-top: 18px;
       font-weight: bold;
       display: flex;
@@ -458,6 +473,7 @@
       right: 1.05in;
       bottom: 12px;
       padding: 4px 8px;
+      font-family: Arial, sans-serif;
       font-weight: bold;
       display: flex;
       align-items: center;
@@ -466,6 +482,7 @@
     }
     
     .price-preview-itemno {
+      font-family: Arial, sans-serif;
       position: absolute;
       bottom: 12px;
       right: 16px;
@@ -3324,6 +3341,7 @@ function createBlankPriceTag() {
     imageSource: "url",
     productUrl: "",
     qrDataUrl: "",
+    presetImageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZzshOBGqqns5_63ZkWXrdoENKNp5ZBjoDLg&s",
     slogan: "",
     sloganBg: "#ffffff",
     sloganColor: "#000000",
@@ -3980,6 +3998,17 @@ function renderPriceTagPreview() {
         }
 
         ${
+          tag.presetImageUrl
+            ? `<img 
+                class="price-preview-preset-image price-clickable" 
+                onclick="openFloatingEditor(${index}, 'presetImage', event)"
+                src="${tag.presetImageUrl}" 
+                alt="Preset Image"
+              >`
+            : ""
+        }
+          
+        ${
           tag.slogan
             ? `<div class="price-preview-slogan price-clickable"
                   onclick="openFloatingEditor(${index}, 'slogan', event)"
@@ -4380,9 +4409,10 @@ function printPriceTags() {
           overflow: hidden;
         }
 
-        .price-preview-name,
-        .price-preview-type,
+        .price-preview-name { font-family: Arial, sans-serif; },
+        .price-preview-type { font-family: Arial, sans-serif; },
         .price-preview-size {
+          font-family: Arial, sans-serif;
           text-align: left;
           line-height: 1.1;
           font-weight: bold;
@@ -4390,6 +4420,7 @@ function printPriceTags() {
         }
 
         .price-preview-price {
+          font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
           margin-top: 18px;
           font-weight: bold;
           display: flex;
@@ -4407,12 +4438,22 @@ function printPriceTags() {
           height: 0.75in;
         }
 
+        .price-preview-preset-image {
+          position: absolute;
+          left: 14px;
+          bottom: 52px;
+          width: 0.85in;
+          height: 0.65in;
+          object-fit: contain;
+        }
+
         .price-preview-slogan {
           position: absolute;
           left: 14px;
           right: 1.05in;
           bottom: 12px;
           padding: 4px 8px;
+          font-family: Arial, sans-serif;
           font-weight: bold;
           display: flex;
           align-items: center;
@@ -4421,6 +4462,7 @@ function printPriceTags() {
         }
 
         .price-preview-itemno {
+          font-family: Arial, sans-serif;
           position: absolute;
           bottom: 12px;
           right: 16px;
@@ -4499,6 +4541,16 @@ function generatePrintTagHTML() {
               : ""
           }
 
+          ${
+            tag.presetImageUrl
+              ? `<img 
+                  class="price-preview-preset-image" 
+                  src="${tag.presetImageUrl}" 
+                  alt="Preset Image"
+                >`
+              : ""
+          }
+  
           ${
             tag.slogan
               ? `<div class="price-preview-slogan"
