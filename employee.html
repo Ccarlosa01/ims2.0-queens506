@@ -1326,10 +1326,11 @@
               <th>Product(s)</th>
               <th>Notes</th>
               <th>Created By</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="tastingTableBody">
-            <tr><td colspan="5">No tastings loaded.</td></tr>
+            <tr><td colspan="6">No tastings loaded.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1348,7 +1349,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwOGXxFLStgPppnccTcmfAqEdSWzku9P_xOqwyd2Ab3FSbIn-vY47vu-mJtceH4TRybxg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFgirz-JwObjdXpMq8pZSThkwrk0T1E_MQE_C_CgzgjyGaE7MAoEvZ1btZXYCGrqYctQ/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -4754,6 +4755,11 @@ function renderTastingList() {
         <td>${tasting.products || ""}</td>
         <td>${tasting.notes || ""}</td>
         <td>${tasting.createdBy || ""}</td>
+        <td>
+          <button class="danger" onclick="deleteTasting(${tasting.rowNumber})">
+            Delete
+          </button>
+        </td>
       `;
 
       tbody.appendChild(tr);
@@ -5136,6 +5142,42 @@ function downloadTastingsCSV() {
 
   document.body.removeChild(link);
 }
+
+async function deleteTasting(rowNumber) {
+  if (!confirm("Are you sure you want to delete this tasting?")) return;
+
+  try {
+    showMessage("tastingMessage", "Deleting tasting...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "deleteTasting",
+        rowNumber
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("tastingMessage", result.message, "success");
+      await loadTastings();
+    } else {
+      showMessage("tastingMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("tastingMessage", "Could not delete tasting.", "error");
+  }
+}
+  
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
