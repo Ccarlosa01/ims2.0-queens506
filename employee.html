@@ -720,6 +720,7 @@
     
     
     <button class="tab-btn" onclick="showTab('inventoryEntry', this)">Inventory Entry</button>
+    <button class="tab-btn" onclick="showTab('recountEntry', this)">Recount Entry</button>
     
     <button id="inventoryUploadTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryUpload', this)" style="display:none;">
       Inventory Upload
@@ -1131,6 +1132,59 @@
     </div>
   
   </div>
+
+  <div id="recountEntry" class="tab-section">
+    <div class="card">
+      <h2>Recount Entry</h2>
+      <p class="muted">
+        Select an item from the recount list, then enter Qty On Hand, Floor, Steel, and Behind Steel.
+      </p>
+  
+      <button class="secondary" onclick="loadRecountItems()">Refresh Recount Items</button>
+  
+      <label for="recountItemSelect">Select Item</label>
+      <select id="recountItemSelect" onchange="selectRecountItem()">
+        <option value="">Load recount items first...</option>
+      </select>
+  
+      <div id="recountLastSavedInfo" class="message"></div>
+  
+      <label>Item No.</label>
+      <input id="recountItemNo" class="readonly-field" readonly />
+  
+      <label>Description</label>
+      <input id="recountDescription" class="readonly-field" readonly />
+  
+      <div class="row">
+        <div>
+          <label>Qty On Hand</label>
+          <input type="number" id="recountQtyOnHand" min="0" value="0" />
+        </div>
+  
+        <div>
+          <label>Floor</label>
+          <input type="number" id="recountFloor" min="0" value="0" />
+        </div>
+      </div>
+  
+      <div class="row">
+        <div>
+          <label>Steel</label>
+          <input type="number" id="recountSteel" min="0" value="0" />
+        </div>
+  
+        <div>
+          <label>Behind Steel</label>
+          <input type="number" id="recountBehindSteel" min="0" value="0" />
+        </div>
+      </div>
+  
+      <button class="primary" onclick="submitRecountEntry()">Submit Recount Entry</button>
+  
+      <div id="recountEntryMessage" class="message"></div>
+    </div>
+  
+  </div>
   
   <div id="inventoryUpload" class="tab-section">
 
@@ -1159,6 +1213,19 @@
       <button class="primary" onclick="uploadBarcodeFile()">Upload Barcodes</button>
     
       <div id="barcodeUploadMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Recount Inventory Upload</h2>
+      <p class="muted">
+        Manager-only tool. Upload a Recount Inventory .xlsx file with headers: Item No. and Description.
+      </p>
+    
+      <input type="file" id="recountInventoryFile" accept=".xlsx,.xls,.csv" />
+    
+      <button class="primary" onclick="uploadRecountInventoryFile()">Upload Recount Inventory</button>
+    
+      <div id="recountInventoryUploadMessage" class="message"></div>
     </div>
 
   </div>
@@ -1349,7 +1416,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFgirz-JwObjdXpMq8pZSThkwrk0T1E_MQE_C_CgzgjyGaE7MAoEvZ1btZXYCGrqYctQ/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzIqqFjFPOpCuOJpXFMVRSq3BhqMicTyfvxZFe0oY_jszIagj4kVQ58mtGb5S_IH2zDw/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1368,6 +1435,8 @@ let selectedPriceElement = "";
 let priceTagSettings = {};
 let tastingsData = [];
 let tastingViewMode = "list";
+let recountItems = [];
+let selectedRecountItem = null;
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -1407,6 +1476,7 @@ window.onload = async function () {
   await loadCustomers();
   await loadBarcodes();
   await loadPriceTagSettings();
+  await loadRecountItems();
 };
 
 function showTab(tabId, btn) {
@@ -1937,7 +2007,10 @@ function clearAllMessages() {
     "inventoryScannerMessage",
     "barcodeUploadMessage",
     "inventoryReportMessage",
-    "tastingMessage"
+    "tastingMessage",
+    "recountInventoryUploadMessage",
+    "recountEntryMessage",
+    "recountLastSavedInfo"
   ];
 
   messageIds.forEach(id => {
@@ -5169,6 +5242,173 @@ async function deleteTasting(rowNumber) {
   } catch {
     showMessage("tastingMessage", "Could not delete tasting.", "error");
   }
+}
+
+async function uploadRecountInventoryFile() {
+  const fileInput = document.getElementById("recountInventoryFile");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showMessage("recountInventoryUploadMessage", "Please choose a Recount Inventory file first.", "error");
+    return;
+  }
+
+  if (currentUser.role !== "Manager") {
+    showMessage("recountInventoryUploadMessage", "Only managers can upload Recount Inventory.", "error");
+    return;
+  }
+
+  try {
+    showMessage("recountInventoryUploadMessage", "Reading Recount Inventory file...", "");
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    const rows = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: ""
+    });
+
+    if (!rows.length) {
+      showMessage("recountInventoryUploadMessage", "The uploaded file is empty.", "error");
+      return;
+    }
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "replaceRecountInventory",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("recountInventoryUploadMessage", result.message, "success");
+      fileInput.value = "";
+      await loadRecountItems();
+    } else {
+      showMessage("recountInventoryUploadMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("recountInventoryUploadMessage", "Could not upload Recount Inventory file.", "error");
+  }
+}
+
+async function loadRecountItems() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getRecountItems`);
+    const result = await response.json();
+
+    if (result.success) {
+      recountItems = result.items || [];
+      populateRecountDropdown();
+    } else {
+      showMessage("recountEntryMessage", result.message, "error");
+    }
+  } catch {
+    showMessage("recountEntryMessage", "Could not load recount items.", "error");
+  }
+}
+
+function populateRecountDropdown() {
+  const select = document.getElementById("recountItemSelect");
+  if (!select) return;
+
+  select.innerHTML = `<option value="">Select item...</option>`;
+
+  recountItems.forEach((item, index) => {
+    const lastSavedText = item.lastSavedBy
+      ? `Last saved by ${item.lastSavedBy} at ${formatTimestampEST(item.lastSavedTime)}`
+      : "Not counted yet";
+
+    const option = document.createElement("option");
+    option.value = index;
+    option.textContent = `${item.itemNo} | ${item.description} | ${lastSavedText}`;
+
+    select.appendChild(option);
+  });
+}
+
+function selectRecountItem() {
+  const index = document.getElementById("recountItemSelect").value;
+
+  if (index === "") {
+    selectedRecountItem = null;
+    clearRecountEntryForm();
+    return;
+  }
+
+  selectedRecountItem = recountItems[Number(index)];
+
+  document.getElementById("recountItemNo").value = selectedRecountItem.itemNo || "";
+  document.getElementById("recountDescription").value = selectedRecountItem.description || "";
+
+  document.getElementById("recountQtyOnHand").value = Number(selectedRecountItem.lastQtyOnHand || 0);
+  document.getElementById("recountFloor").value = Number(selectedRecountItem.lastFloor || 0);
+  document.getElementById("recountSteel").value = Number(selectedRecountItem.lastSteel || 0);
+  document.getElementById("recountBehindSteel").value = Number(selectedRecountItem.lastBehindSteel || 0);
+
+  if (selectedRecountItem.lastSavedBy) {
+    showMessage(
+      "recountLastSavedInfo",
+      `Last Saved by ${selectedRecountItem.lastSavedBy} at ${formatTimestampEST(selectedRecountItem.lastSavedTime)}`,
+      "success"
+    );
+  } else {
+    showMessage("recountLastSavedInfo", "Not counted yet.", "");
+  }
+}
+
+async function submitRecountEntry() {
+  if (!selectedRecountItem) {
+    showMessage("recountEntryMessage", "Please select an item first.", "error");
+    return;
+  }
+
+  try {
+    showMessage("recountEntryMessage", "Saving recount entry...", "");
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveRecountEntry",
+        itemNo: selectedRecountItem.itemNo,
+        description: selectedRecountItem.description,
+        employee: currentUser.name || currentUser.username || "",
+        qtyOnHand: Number(document.getElementById("recountQtyOnHand").value || 0),
+        floor: Number(document.getElementById("recountFloor").value || 0),
+        steel: Number(document.getElementById("recountSteel").value || 0),
+        behindSteel: Number(document.getElementById("recountBehindSteel").value || 0)
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showMessage("recountEntryMessage", result.message, "success");
+      await loadRecountItems();
+    } else {
+      showMessage("recountEntryMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("recountEntryMessage", "Could not save recount entry.", "error");
+  }
+}
+
+function clearRecountEntryForm() {
+  document.getElementById("recountItemNo").value = "";
+  document.getElementById("recountDescription").value = "";
+  document.getElementById("recountQtyOnHand").value = 0;
+  document.getElementById("recountFloor").value = 0;
+  document.getElementById("recountSteel").value = 0;
+  document.getElementById("recountBehindSteel").value = 0;
+  document.getElementById("recountLastSavedInfo").textContent = "";
 }
   
 </script>
