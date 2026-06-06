@@ -729,6 +729,11 @@
     <button id="inventoryReportTabBtn" class="tab-btn manager-only" onclick="showTab('inventoryReport', this)" style="display:none;">
       Inventory Report
     </button>
+
+    <button id="recountReportTabBtn" class="tab-btn manager-only" onclick="showTab('recountReport', this)" style="display:none;">
+      Recount Report
+    </button>
+    
   </div>
 
   <div id="workbench" class="tab-section active">
@@ -789,7 +794,6 @@
   </div>
 
   <div id="catalog" class="tab-section">
-
     <div class="card">
       <h2>Warehouse Pallet Catalog</h2>
       <p class="muted">View what is on pallets, search products, filter by pallet, and view totals.</p>
@@ -1254,6 +1258,29 @@
     </div>
   </div>
 
+  <div id="recountReport" class="tab-section">
+    <div class="card">
+      <h2>Recount Report</h2>
+      <p class="muted">
+        Manager-only report. This generates recount variance using Recount Inventory, Recount Entries, Pallets, and Breakers.
+      </p>
+  
+      <button class="primary" onclick="generateRecountReport()">Generate Recount Report</button>
+      <button class="secondary" onclick="downloadRecountReportExcel()">Download Recount Report Excel</button>
+  
+      <div id="recountReportMessage" class="message"></div>
+  
+      <div class="table-scroll">
+        <table class="wide-table">
+          <thead id="recountReportHead"></thead>
+          <tbody id="recountReportBody">
+            <tr><td>No report generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <div id="priceTags" class="tab-section">
     <div class="card">
       <div class="preview-header">
@@ -1416,7 +1443,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzzIqqFjFPOpCuOJpXFMVRSq3BhqMicTyfvxZFe0oY_jszIagj4kVQ58mtGb5S_IH2zDw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuT_OueIfnUJDaRc7MEwKOAP8JTkF_pcOg1E_vElkeh0YjZlFeLWuEYhQUY2iwNMKLig/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1437,6 +1464,7 @@ let tastingsData = [];
 let tastingViewMode = "list";
 let recountItems = [];
 let selectedRecountItem = null;
+let recountReportData = [];
 
 window.onload = async function () {
   const savedUser = localStorage.getItem("warehouseUser");
@@ -1458,6 +1486,9 @@ window.onload = async function () {
   
     const reportBtn = document.getElementById("inventoryReportTabBtn");
     if (reportBtn) reportBtn.style.display = "inline-block";
+
+    const recountReportBtn = document.getElementById("recountReportTabBtn");
+    if (recountReportBtn) recountReportBtn.style.display = "inline-block";
   
     document.querySelectorAll(".manager-only").forEach(el => {
       el.style.display = "inline-block";
@@ -2010,7 +2041,8 @@ function clearAllMessages() {
     "tastingMessage",
     "recountInventoryUploadMessage",
     "recountEntryMessage",
-    "recountLastSavedInfo"
+    "recountLastSavedInfo",
+    "recountReportMessage"
   ];
 
   messageIds.forEach(id => {
@@ -5410,14 +5442,166 @@ function clearRecountEntryForm() {
   document.getElementById("recountBehindSteel").value = 0;
   document.getElementById("recountLastSavedInfo").textContent = "";
 }
+
+async function generateRecountReport() {
+  if (currentUser.role !== "Manager") {
+    showMessage("recountReportMessage", "Only managers can generate this report.", "error");
+    return;
+  }
+
+  try {
+    showMessage("recountReportMessage", "Generating recount report...", "");
+
+    const response = await fetch(`${SCRIPT_URL}?action=generateRecountReport`);
+    const result = await response.json();
+
+    if (result.success) {
+      recountReportData = result.report || [];
+      renderRecountReportTable();
+      showMessage("recountReportMessage", result.message, "success");
+    } else {
+      showMessage("recountReportMessage", result.message, "error");
+    }
+
+  } catch {
+    showMessage("recountReportMessage", "Could not generate recount report.", "error");
+  }
+}
+
+function renderRecountReportTable() {
+  const head = document.getElementById("recountReportHead");
+  const body = document.getElementById("recountReportBody");
+
+  if (!head || !body) return;
+
+  head.innerHTML = "";
+  body.innerHTML = "";
+
+  if (!recountReportData.length) {
+    body.innerHTML = `<tr><td>No report generated yet.</td></tr>`;
+    return;
+  }
+
+  const headers = recountReportData[0];
+  const rows = recountReportData.slice(1);
+
+  const headerRow = document.createElement("tr");
+
+  headers.forEach(header => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    headerRow.appendChild(th);
+  });
+
+  head.appendChild(headerRow);
+
+  if (!rows.length) {
+    body.innerHTML = `<tr><td colspan="${headers.length}">No recount report rows found.</td></tr>`;
+    return;
+  }
+
+  rows.forEach(row => {
+    const tr = document.createElement("tr");
+
+    row.forEach((cell, index) => {
+      const td = document.createElement("td");
+      const header = headers[index];
+      const val = Number(cell || 0);
+
+      td.textContent = cell;
+
+      if (header === "Count Variance") {
+        if (val > 0) {
+          td.style.background = "#e6f7ec";
+          td.style.color = "#0a7a2f";
+          td.style.fontWeight = "bold";
+        } else if (val < 0) {
+          td.style.background = "#fdeaea";
+          td.style.color = "#b00020";
+          td.style.fontWeight = "bold";
+        }
+      }
+
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+}
+
+async function downloadRecountReportExcel() {
+  if (!recountReportData.length) {
+    showMessage("recountReportMessage", "Generate the report first before downloading.", "error");
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Recount Report");
+
+  recountReportData.forEach(row => {
+    worksheet.addRow(row);
+  });
+
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF4F6F8" }
+  };
+
+  const headers = recountReportData[0];
+  const varianceCol = headers.indexOf("Count Variance") + 1;
+
+  worksheet.columns.forEach(column => {
+    column.width = 18;
+  });
+
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return;
+
+    const cell = row.getCell(varianceCol);
+    const value = Number(cell.value || 0);
+
+    if (value > 0) {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE6F7EC" }
+      };
+      cell.font = {
+        color: { argb: "FF0A7A2F" },
+        bold: true
+      };
+    } else if (value < 0) {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFDEAEA" }
+      };
+      cell.font = {
+        color: { argb: "FFB00020" },
+        bold: true
+      };
+    }
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "recount-report.xlsx";
+  link.click();
+
+  URL.revokeObjectURL(link.href);
+}
   
 </script>
 </body>
 </html>
-
-
-
-
 
 
 
