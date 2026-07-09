@@ -3084,7 +3084,7 @@ function handleInventoryBarcode(scannedCode) {
   const code = String(scannedCode || "").trim();
 
   const barcodeMatch = barcodeData.find(row =>
-    String(row.barcode || "").trim() === code
+    cleanBarcode(row.barcode) === cleanBarcode(code)
   );
 
   if (!barcodeMatch || !barcodeMatch.itemNo) {
@@ -3097,6 +3097,7 @@ function handleInventoryBarcode(scannedCode) {
     return;
   }
 
+  // This is the important line:
   document.getElementById("inventoryEntryItemNo").value = barcodeMatch.itemNo;
 
   showMessage(
@@ -3106,6 +3107,12 @@ function handleInventoryBarcode(scannedCode) {
   );
 }
 
+function cleanBarcode(value) {
+  return String(value || "")
+    .replace(/\D/g, "")
+    .replace(/^0+/, "");
+}
+  
 async function submitInventoryEntry() {
   const itemNo = document.getElementById("inventoryEntryItemNo").value.trim();
   const floor = Number(document.getElementById("floorCount").value || 0);
