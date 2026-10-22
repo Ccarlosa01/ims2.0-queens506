@@ -706,6 +706,94 @@
     .price-format-btn.italic-btn { font-style: italic; }
     .price-format-btn.underline-btn { text-decoration: underline; }
 
+    .tasting-product-search-wrap {
+      position: relative;
+    }
+
+    .tasting-product-suggestions {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      display: none;
+      max-height: 260px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.14);
+      z-index: 10000;
+    }
+
+    .tasting-product-suggestion {
+      display: block;
+      width: 100%;
+      margin: 0;
+      padding: 10px 12px;
+      border: 0;
+      border-bottom: 1px solid #eee;
+      border-radius: 0;
+      background: white;
+      color: #222;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .tasting-product-suggestion:hover {
+      background: #f0f4ff;
+    }
+
+    .tasting-selected-products {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .tasting-selected-product {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 11px;
+      background: #f4f6f8;
+      border: 1px solid #dde2ea;
+      border-radius: 8px;
+    }
+
+    .tasting-selected-product span {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .tasting-selected-product button {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      margin: 0;
+      padding: 0;
+      border-radius: 50%;
+      background: #ffe5e5;
+      color: #b00020;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .tasting-product-bullets {
+      margin: 0;
+      padding-left: 19px;
+    }
+
+    .tasting-product-bullets li {
+      margin: 0 0 4px;
+    }
+
+    .tasting-product-bullets.compact {
+      margin-top: 5px;
+      padding-left: 17px;
+      font-size: 11px;
+    }
+
     .tasting-calendar {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -1554,7 +1642,18 @@
       </div>
   
       <label>Product(s)</label>
-      <input id="tastingProducts" placeholder="Example: Jim Beam, Maker's Mark, Hornitos" />
+      <div class="tasting-product-search-wrap">
+        <input
+          id="tastingProductSearch"
+          placeholder="Search by Item No. or Description..."
+          autocomplete="off"
+          oninput="showTastingProductSuggestions(this.value)"
+          onfocus="showTastingProductSuggestions(this.value)"
+          onkeydown="handleTastingProductSearchKeydown(event)"
+        />
+        <div id="tastingProductSuggestions" class="tasting-product-suggestions"></div>
+      </div>
+      <div id="tastingSelectedProducts" class="tasting-selected-products"></div>
       
       <label>Notes</label>
       <input id="tastingNotes" placeholder="Optional notes..." />
@@ -1641,7 +1740,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJ2OBv4fzZR90g7tYtImlXbotx8ogZZdTsUFLJjGOpoZY0qN6gseIl2HemCruRJ7xM/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwUtpmg-it4B6Las_RMpTtozsqzBy6bZtxU_ze2Ivoc2CKbTpbF_txM5YYngDd8NINT2A/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1731,6 +1830,7 @@ function getPriceTagFontStack(fontName) {
 let tastingsData = [];
 let tastingViewMode = "list";
 let editingTastingRowNumber = null;
+let selectedTastingProducts = [];
 let recountItems = [];
 let selectedRecountItem = null;
 let recountReportData = [];
@@ -5554,12 +5654,185 @@ function setupTastingMonthYear() {
   yearInput.value = today.getFullYear();
 }
 
+function parseTastingProducts(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return [];
+
+  if (raw.includes("||")) {
+    return raw.split("||").map(item => item.trim()).filter(Boolean);
+  }
+
+  if (raw.includes("\n")) {
+    return raw.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  }
+
+  // Backward compatibility for older tastings that were saved as comma-separated text.
+  if (raw.includes(",")) {
+    return raw.split(",").map(item => item.trim()).filter(Boolean);
+  }
+
+  return [raw];
+}
+
+function getTastingProductLabel(item) {
+  const itemNo = String(item?.itemNo || "").trim();
+  const description = String(item?.description || "").trim();
+
+  if (itemNo && description) return `${itemNo} - ${description}`;
+  return description || itemNo;
+}
+
+function showTastingProductSuggestions(query = "") {
+  const box = document.getElementById("tastingProductSuggestions");
+  if (!box) return;
+
+  const search = String(query || "").trim().toLowerCase();
+  const selectedLabels = new Set(
+    selectedTastingProducts.map(item => String(item.label || "").toLowerCase())
+  );
+
+  const matches = inventory
+    .map((item, index) => ({ item, index, label: getTastingProductLabel(item) }))
+    .filter(entry => {
+      if (!entry.label || selectedLabels.has(entry.label.toLowerCase())) return false;
+      if (!search) return true;
+
+      const itemNo = String(entry.item.itemNo || "").toLowerCase();
+      const description = String(entry.item.description || "").toLowerCase();
+      return itemNo.includes(search) || description.includes(search);
+    })
+    .slice(0, 30);
+
+  if (!matches.length) {
+    box.innerHTML = `<div style="padding:10px 12px;color:#666;">No inventory matches found.</div>`;
+    box.style.display = "block";
+    return;
+  }
+
+  box.innerHTML = matches.map(entry => `
+    <button
+      type="button"
+      class="tasting-product-suggestion"
+      onclick="selectTastingProductByIndex(${entry.index})"
+    >
+      ${escapeHtml(entry.label)}
+    </button>
+  `).join("");
+
+  box.style.display = "block";
+}
+
+function hideTastingProductSuggestions() {
+  const box = document.getElementById("tastingProductSuggestions");
+  if (box) box.style.display = "none";
+}
+
+function handleTastingProductSearchKeydown(event) {
+  if (event.key === "Escape") {
+    hideTastingProductSuggestions();
+    event.currentTarget.blur();
+  }
+}
+
+function selectTastingProductByIndex(index) {
+  const item = inventory[index];
+  if (!item) return;
+
+  const label = getTastingProductLabel(item);
+  if (!label) return;
+
+  const exists = selectedTastingProducts.some(
+    selected => String(selected.label || "").toLowerCase() === label.toLowerCase()
+  );
+
+  if (!exists) {
+    selectedTastingProducts.push({
+      itemNo: String(item.itemNo || "").trim(),
+      description: String(item.description || "").trim(),
+      label
+    });
+  }
+
+  const search = document.getElementById("tastingProductSearch");
+  if (search) {
+    search.value = "";
+    search.focus();
+  }
+
+  hideTastingProductSuggestions();
+  renderSelectedTastingProducts();
+}
+
+function removeTastingProduct(index) {
+  selectedTastingProducts.splice(index, 1);
+  renderSelectedTastingProducts();
+}
+
+function renderSelectedTastingProducts() {
+  const container = document.getElementById("tastingSelectedProducts");
+  if (!container) return;
+
+  if (!selectedTastingProducts.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = selectedTastingProducts.map((item, index) => `
+    <div class="tasting-selected-product">
+      <span>${escapeHtml(item.label || "")}</span>
+      <button
+        type="button"
+        title="Remove product"
+        aria-label="Remove ${escapeHtml(item.label || "product")}"
+        onclick="removeTastingProduct(${index})"
+      >×</button>
+    </div>
+  `).join("");
+}
+
+function clearTastingProductSelection() {
+  selectedTastingProducts = [];
+
+  const search = document.getElementById("tastingProductSearch");
+  if (search) search.value = "";
+
+  hideTastingProductSuggestions();
+  renderSelectedTastingProducts();
+}
+
+function formatTastingProductsAsList(value, compact = false) {
+  const products = parseTastingProducts(value);
+  if (!products.length) return "";
+
+  const className = compact
+    ? "tasting-product-bullets compact"
+    : "tasting-product-bullets";
+
+  return `
+    <ul class="${className}">
+      ${products.map(product => `<li>${escapeHtml(product)}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function getTastingProductsPlainText(value) {
+  return parseTastingProducts(value).join(", ");
+}
+
+document.addEventListener("click", event => {
+  const wrap = event.target.closest?.(".tasting-product-search-wrap");
+  if (!wrap) hideTastingProductSuggestions();
+});
+
 async function saveTasting() {
   const dateReserved = document.getElementById("tastingDate").value;
   const timeFrom = document.getElementById("tastingTimeFrom").value;
   const timeTo = document.getElementById("tastingTimeTo").value;
   const timeSlot = `${timeFrom} - ${timeTo}`;
-  const products = document.getElementById("tastingProducts").value.trim();
+  const products = selectedTastingProducts
+    .map(item => item.label)
+    .filter(Boolean)
+    .join("||");
   const notes = document.getElementById("tastingNotes").value.trim();
   const imageUrl = document.getElementById("tastingImageUrl").value.trim();
 
@@ -5605,7 +5878,7 @@ async function saveTasting() {
       document.getElementById("tastingDate").value = "";
       document.getElementById("tastingTimeFrom").value = "";
       document.getElementById("tastingTimeTo").value = "";
-      document.getElementById("tastingProducts").value = "";
+      clearTastingProductSelection();
       document.getElementById("tastingNotes").value = "";
       document.getElementById("tastingImageUrl").value = "";
 
@@ -5647,7 +5920,12 @@ function editTasting(rowNumber) {
   document.getElementById("tastingTimeFrom").value = timeParts[0] || "";
   document.getElementById("tastingTimeTo").value = timeParts[1] || "";
 
-  document.getElementById("tastingProducts").value = tasting.products || "";
+  selectedTastingProducts = parseTastingProducts(tasting.products).map(label => ({
+    label
+  }));
+  renderSelectedTastingProducts();
+  document.getElementById("tastingProductSearch").value = "";
+  hideTastingProductSuggestions();
   document.getElementById("tastingNotes").value = tasting.notes || "";
   document.getElementById("tastingImageUrl").value = tasting.imageUrl || "";
 
@@ -5669,7 +5947,7 @@ function cancelEditTasting() {
   document.getElementById("tastingDate").value = "";
   document.getElementById("tastingTimeFrom").value = "";
   document.getElementById("tastingTimeTo").value = "";
-  document.getElementById("tastingProducts").value = "";
+  clearTastingProductSelection();
   document.getElementById("tastingNotes").value = "";
   document.getElementById("tastingImageUrl").value = "";
 
@@ -5748,7 +6026,7 @@ function renderTastingList() {
       tr.innerHTML = `
         <td>${formatDateOnly(tasting.dateReserved)}</td>
         <td>${tasting.timeSlot || ""}</td>
-        <td>${tasting.products || ""}</td>
+        <td>${formatTastingProductsAsList(tasting.products)}</td>
         <td>${tasting.notes || ""}</td>
         <td>${tasting.createdBy || ""}</td>
         <td>
@@ -5813,7 +6091,7 @@ function renderTastingCalendar() {
       eventDiv.className = "tasting-event";
       eventDiv.innerHTML = `
         <strong>${event.timeSlot || ""}</strong><br>
-        ${event.products || ""}
+        ${formatTastingProductsAsList(event.products, true)}
       `;
       cell.appendChild(eventDiv);
     });
@@ -5916,7 +6194,8 @@ function buildGoogleCalendarLink(tasting) {
   const startDate = formatGoogleCalendarDate(dateKey, start);
   const endDate = formatGoogleCalendarDate(dateKey, end);
 
-  const title = `${tasting.products || "Tasting"} Tasting`;
+  const productTitle = getTastingProductsPlainText(tasting.products) || "Tasting";
+  const title = `${productTitle} Tasting`;
   const details = tasting.notes || "";
 
   return "https://calendar.google.com/calendar/render?action=TEMPLATE" +
@@ -5933,7 +6212,7 @@ function buildICSLink(tasting) {
 
   return SCRIPT_URL +
     `?action=downloadICS` +
-    `&title=${encodeURIComponent((tasting.products || "Tasting") + " Tasting")}` +
+    `&title=${encodeURIComponent((getTastingProductsPlainText(tasting.products) || "Tasting") + " Tasting")}` +
     `&date=${encodeURIComponent(dateKey)}` +
     `&start=${encodeURIComponent(start || "")}` +
     `&end=${encodeURIComponent(end || "")}` +
@@ -6027,7 +6306,7 @@ async function downloadMonthlyTastingPDF() {
 
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(13);
-      pdf.text(tasting.products || "Tasting", margin + 18, y);
+      pdf.text(getTastingProductsPlainText(tasting.products) || "Tasting", margin + 18, y);
 
       y += 17;
 
@@ -6104,7 +6383,7 @@ function downloadTastingsCSV() {
     const endTime = parts[1] || "";
 
     rows.push([
-      tasting.products || "",
+      getTastingProductsPlainText(tasting.products),
       convertToCSVDate(tasting.dateReserved, startTime),
       convertToCSVDate(tasting.dateReserved, endTime),
       tasting.imageUrl || ""
