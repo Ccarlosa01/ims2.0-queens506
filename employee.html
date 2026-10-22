@@ -1559,7 +1559,7 @@ const PRICE_TAG_SERIF_FONTS = new Set([
 function getPriceTagFontStack(fontName) {
   const font = fontName || "Montserrat";
   const fallback = PRICE_TAG_SERIF_FONTS.has(font) ? "serif" : "sans-serif";
-  return `"${font}", ${fallback}`;
+  return `'${font}', ${fallback}`;
 }
 
 let tastingsData = [];
