@@ -260,12 +260,15 @@
     .price-preview-preset-image {
       position: absolute;
       left: 14px;
-      bottom: 52px;
+    
+      /* Lift logo higher when slogan exists */
+      bottom: 72px;
+    
       width: 0.62in;
       height: 0.48in;
       object-fit: contain;
     }
-
+    
     .price-preview-preset-image.no-slogan {
       bottom: 16px;
       width: 1.15in;
@@ -5304,12 +5307,15 @@ function printPriceTags() {
         .price-preview-preset-image {
           position: absolute;
           left: 14px;
-          bottom: 52px;
+        
+          /* Lift logo higher when slogan exists */
+          bottom: 72px;
+        
           width: 0.62in;
           height: 0.48in;
           object-fit: contain;
         }
-
+        
         .price-preview-preset-image.no-slogan {
           bottom: 16px;
           width: 1.15in;
