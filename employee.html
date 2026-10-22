@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Raleway:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
-  <style> 
+  <style>
     body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; color:#222; }
     header { background:#1f5eff; color:white; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; }
     header h1 { margin:0; font-size:22px; }
@@ -544,6 +544,108 @@
       grid-template-columns: 1fr 46px;
       gap: 8px;
       align-items: end;
+    }
+
+    .price-font-picker {
+      position: relative;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .price-font-picker-button {
+      width: 100%;
+      height: 42px;
+      margin: 0;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+      color: #222;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      text-align: left;
+    }
+
+    .price-font-picker-button:hover {
+      border-color: #999;
+    }
+
+    .price-font-picker-arrow {
+      font-size: 12px;
+      color: #666;
+      transition: transform 0.15s ease;
+    }
+
+    .price-font-picker.open .price-font-picker-arrow {
+      transform: rotate(180deg);
+    }
+
+    .price-font-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.18);
+      z-index: 100005;
+      padding: 6px;
+    }
+
+    .price-font-picker.open .price-font-menu {
+      display: block;
+    }
+
+    .price-font-menu-heading {
+      padding: 8px 9px 5px;
+      color: #666;
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .price-font-option {
+      width: 100%;
+      min-height: 40px;
+      margin: 0;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: white;
+      color: #222;
+      border: 0;
+      border-radius: 7px;
+      font-size: 18px;
+      font-weight: 400;
+      text-align: left;
+    }
+
+    .price-font-option:hover {
+      background: #f0f4ff;
+    }
+
+    .price-font-option.selected {
+      background: #e9eefc;
+      outline: 1px solid #c8d5ff;
+    }
+
+    .price-font-option-check {
+      flex: 0 0 auto;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      color: #1f5eff;
     }
 
     .price-font-favorite {
@@ -1559,6 +1661,9 @@ const PRICE_TAG_SERIF_FONTS = new Set([
 function getPriceTagFontStack(fontName) {
   const font = fontName || "Montserrat";
   const fallback = PRICE_TAG_SERIF_FONTS.has(font) ? "serif" : "sans-serif";
+
+  // Use single quotes inside inline style attributes.
+  // Double quotes here would prematurely close style="..." in generated HTML.
   return `'${font}', ${fallback}`;
 }
 
@@ -4329,28 +4434,69 @@ async function loadPriceTagSettings() {
   }
 }
 
-function buildPriceTagFontOptions(selectedFont) {
+function buildPriceTagFontMenu(selectedFont, familyField) {
   const selected = selectedFont || "Montserrat";
   const favorites = favoritePriceTagFonts.filter(font => PRICE_TAG_FONTS.includes(font));
   const remaining = PRICE_TAG_FONTS.filter(font => !favorites.includes(font));
+
+  const buildOption = font => `
+    <button
+      type="button"
+      class="price-font-option ${font === selected ? "selected" : ""}"
+      style="font-family:${getPriceTagFontStack(font)};"
+      onclick="selectPriceTagFont(event, '${familyField}', '${font}')"
+    >
+      <span>${font}</span>
+      ${font === selected ? '<span class="price-font-option-check">✓</span>' : ''}
+    </button>
+  `;
+
   let html = "";
 
   if (favorites.length) {
-    html += `<optgroup label="★ Favorites">`;
-    favorites.forEach(font => {
-      html += `<option value="${font}" ${font === selected ? "selected" : ""}>${font}</option>`;
-    });
-    html += `</optgroup>`;
+    html += `<div class="price-font-menu-heading">★ Favorites</div>`;
+    html += favorites.map(buildOption).join("");
   }
 
-  html += `<optgroup label="All Fonts">`;
-  remaining.forEach(font => {
-    html += `<option value="${font}" ${font === selected ? "selected" : ""}>${font}</option>`;
-  });
-  html += `</optgroup>`;
+  html += `<div class="price-font-menu-heading">All Fonts</div>`;
+  html += remaining.map(buildOption).join("");
 
   return html;
 }
+
+function togglePriceTagFontMenu(event, button) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  const picker = button.closest(".price-font-picker");
+  if (!picker) return;
+
+  const shouldOpen = !picker.classList.contains("open");
+
+  document.querySelectorAll(".price-font-picker.open").forEach(otherPicker => {
+    otherPicker.classList.remove("open");
+  });
+
+  if (shouldOpen) {
+    picker.classList.add("open");
+  }
+}
+
+function selectPriceTagFont(event, familyField, fontName) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  updateVisualTag(familyField, fontName);
+  renderFloatingPriceEditorContent(selectedPriceTagIndex, selectedPriceElement);
+}
+
+function closeAllPriceTagFontMenus() {
+  document.querySelectorAll(".price-font-picker.open").forEach(picker => {
+    picker.classList.remove("open");
+  });
+}
+
+document.addEventListener("click", closeAllPriceTagFontMenus);
 
 function isFavoritePriceTagFont(fontName) {
   return favoritePriceTagFonts.includes(fontName);
@@ -4460,10 +4606,20 @@ function buildTypographyEditor(element, tag) {
 
     <label>Font</label>
     <div class="price-font-row">
-      <select onchange="updateVisualTag('${config.familyField}', this.value); renderFloatingPriceEditorContent(selectedPriceTagIndex, selectedPriceElement);"
-              style="font-family:${getPriceTagFontStack(font)};">
-        ${buildPriceTagFontOptions(font)}
-      </select>
+      <div class="price-font-picker">
+        <button
+          type="button"
+          class="price-font-picker-button"
+          onclick="togglePriceTagFontMenu(event, this)"
+        >
+          <span>${font}</span>
+          <span class="price-font-picker-arrow">▼</span>
+        </button>
+
+        <div class="price-font-menu" onclick="event.stopPropagation()">
+          ${buildPriceTagFontMenu(font, config.familyField)}
+        </div>
+      </div>
 
       <button type="button"
               class="price-font-favorite ${isFavorite ? "active" : ""}"
@@ -6139,6 +6295,5 @@ function normalizeBarcode(value) {
 </script>
 </body>
 </html>
-
 
 
