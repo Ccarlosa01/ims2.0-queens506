@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Raleway:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Anton&family=Archivo+Narrow:ital,wght@0,400;0,700;1,400;1,700&family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Barlow+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Crimson+Pro:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Fjalla+One&family=Inter:ital,wght@0,400;0,700;1,400;1,700&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=League+Spartan:wght@400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Nunito:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Raleway:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Work+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
   <style>
     body { font-family: Arial, sans-serif; background:#f4f6f8; margin:0; color:#222; }
@@ -1634,36 +1634,71 @@ let selectedPriceElement = "";
 let priceTagSettings = {};
 let favoritePriceTagFonts = [];
 
-const PRICE_TAG_FONTS = [
-  "Anton",
-  "Bebas Neue",
-  "Lato",
-  "Libre Baskerville",
-  "Lora",
-  "Merriweather",
-  "Montserrat",
-  "Open Sans",
-  "Oswald",
-  "Playfair Display",
-  "Poppins",
-  "Raleway",
-  "Roboto",
-  "Roboto Condensed"
-];
+const PRICE_TAG_FONT_GROUPS = {
+  "Sans Serif": [
+    "Arimo",
+    "Roboto",
+    "Open Sans",
+    "Montserrat",
+    "Poppins",
+    "Lato",
+    "Raleway",
+    "Nunito",
+    "Work Sans",
+    "Inter",
+    "DM Sans"
+  ],
+  "Display / Condensed": [
+    "Anton",
+    "Oswald",
+    "Bebas Neue",
+    "Roboto Condensed",
+    "Archivo Narrow",
+    "Barlow Condensed",
+    "Fjalla One",
+    "League Spartan",
+    "Abril Fatface",
+    "Alfa Slab One"
+  ],
+  "Serif / Premium": [
+    "Playfair Display",
+    "Merriweather",
+    "Lora",
+    "Libre Baskerville",
+    "Cormorant Garamond",
+    "Crimson Pro"
+  ],
+  "System Fonts": [
+    "Arial",
+    "Impact"
+  ]
+};
+
+const PRICE_TAG_FONTS = Object.values(PRICE_TAG_FONT_GROUPS).flat();
 
 const PRICE_TAG_SERIF_FONTS = new Set([
-  "Libre Baskerville",
-  "Lora",
+  "Playfair Display",
   "Merriweather",
-  "Playfair Display"
+  "Lora",
+  "Libre Baskerville",
+  "Cormorant Garamond",
+  "Crimson Pro"
 ]);
 
 function getPriceTagFontStack(fontName) {
   const font = fontName || "Montserrat";
+
+  if (font === "Arial") {
+    return "Arial, Helvetica, sans-serif";
+  }
+
+  if (font === "Impact") {
+    return "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif";
+  }
+
   const fallback = PRICE_TAG_SERIF_FONTS.has(font) ? "serif" : "sans-serif";
 
   // Use single quotes inside inline style attributes.
-  // Double quotes here would prematurely close style="..." in generated HTML.
   return `'${font}', ${fallback}`;
 }
 
@@ -4437,7 +4472,6 @@ async function loadPriceTagSettings() {
 function buildPriceTagFontMenu(selectedFont, familyField) {
   const selected = selectedFont || "Montserrat";
   const favorites = favoritePriceTagFonts.filter(font => PRICE_TAG_FONTS.includes(font));
-  const remaining = PRICE_TAG_FONTS.filter(font => !favorites.includes(font));
 
   const buildOption = font => `
     <button
@@ -4458,8 +4492,13 @@ function buildPriceTagFontMenu(selectedFont, familyField) {
     html += favorites.map(buildOption).join("");
   }
 
-  html += `<div class="price-font-menu-heading">All Fonts</div>`;
-  html += remaining.map(buildOption).join("");
+  Object.entries(PRICE_TAG_FONT_GROUPS).forEach(([groupName, fonts]) => {
+    const visibleFonts = fonts.filter(font => !favorites.includes(font));
+    if (!visibleFonts.length) return;
+
+    html += `<div class="price-font-menu-heading">${groupName}</div>`;
+    html += visibleFonts.map(buildOption).join("");
+  });
 
   return html;
 }
@@ -5157,7 +5196,7 @@ function printPriceTags() {
 
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-      <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Raleway:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Alfa+Slab+One&family=Anton&family=Archivo+Narrow:ital,wght@0,400;0,700;1,400;1,700&family=Arimo:ital,wght@0,400;0,700;1,400;1,700&family=Barlow+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Crimson+Pro:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Fjalla+One&family=Inter:ital,wght@0,400;0,700;1,400;1,700&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=League+Spartan:wght@400;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Nunito:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:ital,wght@0,400;0,700;1,400;1,700&family=Raleway:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Work+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
       <style>
         body {
@@ -6295,5 +6334,3 @@ function normalizeBarcode(value) {
 </script>
 </body>
 </html>
-
-
