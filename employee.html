@@ -5120,11 +5120,54 @@ function openFloatingEditor(index, element, event) {
   panel.style.display = "block";
 
   if (event) {
-    panel.style.left = Math.min(window.innerWidth - 340, event.clientX + 16) + "px";
-    panel.style.top = Math.min(window.innerHeight - 520, event.clientY + 16) + "px";
+    const clickedElement = event.currentTarget;
+    const rect = clickedElement.getBoundingClientRect();
+
+    const panelWidth = 320;
+    const gap = 14;
+
+    // Default:
+    // place the top-left of the editor
+    // just to the right of the field's top-right corner
+    let left = rect.right + gap;
+    let top = rect.top;
+
+    // If there is not enough space on the right,
+    // move the editor to the left side of the field
+    if (left + panelWidth > window.innerWidth - 10) {
+      left = rect.left - panelWidth - gap;
+    }
+
+    // Keep editor inside the left edge of the screen
+    if (left < 10) {
+      left = 10;
+    }
+
+    // Keep editor inside the top edge of the screen
+    if (top < 10) {
+      top = 10;
+    }
+
+    panel.style.left = left + "px";
+    panel.style.top = top + "px";
   }
 
   renderFloatingPriceEditorContent(index, element);
+
+  // After the editor content is rendered,
+  // make sure the bottom of the panel is not cut off
+  requestAnimationFrame(() => {
+    const panelRect = panel.getBoundingClientRect();
+
+    if (panelRect.bottom > window.innerHeight - 10) {
+      const adjustedTop = Math.max(
+        10,
+        window.innerHeight - panelRect.height - 10
+      );
+
+      panel.style.top = adjustedTop + "px";
+    }
+  });
 }
 
 function renderFloatingPriceEditorContent(index, element) {
