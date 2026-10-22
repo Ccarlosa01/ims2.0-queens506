@@ -1530,7 +1530,7 @@
 
   <div id="tastings" class="tab-section">
     <div class="card">
-      <h2>Book Tasting</h2>
+      <h2 id="tastingFormTitle">Book Tasting</h2>
   
       <div class="row">
         <div>
@@ -1562,7 +1562,18 @@
       <label>Image URL (Optional)</label>
       <input id="tastingImageUrl" placeholder="Include a Branded Image for Store Tasting Calendar" />
       
-      <button class="primary" onclick="saveTasting()">Book Tasting</button>
+      <button id="saveTastingBtn" class="primary" onclick="saveTasting()">
+        Book Tasting
+      </button>
+
+      <button
+        id="cancelTastingEditBtn"
+        class="secondary"
+        onclick="cancelEditTasting()"
+        style="display:none;"
+      >
+        Cancel Edit
+      </button>
   
       <div id="tastingMessage" class="message"></div>
     </div>
@@ -1630,7 +1641,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwFjj-4EP6OYo6Muv49ku6o7DfOYj--brZcuA6KGXOapRKBLBuUA4zcGhp3j5FHPiNVxw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJ2OBv4fzZR90g7tYtImlXbotx8ogZZdTsUFLJjGOpoZY0qN6gseIl2HemCruRJ7xM/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -1719,6 +1730,7 @@ function getPriceTagFontStack(fontName) {
 
 let tastingsData = [];
 let tastingViewMode = "list";
+let editingTastingRowNumber = null;
 let recountItems = [];
 let selectedRecountItem = null;
 let recountReportData = [];
@@ -5552,17 +5564,28 @@ async function saveTasting() {
   const imageUrl = document.getElementById("tastingImageUrl").value.trim();
 
   if (!dateReserved || !timeFrom || !timeTo || !products) {
-    showMessage("tastingMessage", "Date Reserved, Time Slot, and Product(s) are required.", "error");
+    showMessage(
+      "tastingMessage",
+      "Date Reserved, Time Slot, and Product(s) are required.",
+      "error"
+    );
     return;
   }
 
+  const isEditing = editingTastingRowNumber !== null;
+
   try {
-    showMessage("tastingMessage", "Booking tasting...", "");
+    showMessage(
+      "tastingMessage",
+      isEditing ? "Updating tasting..." : "Booking tasting...",
+      ""
+    );
 
     const response = await fetch(SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify({
-        action: "saveTasting",
+        action: isEditing ? "updateTasting" : "saveTasting",
+        rowNumber: editingTastingRowNumber,
         dateReserved,
         timeSlot,
         imageUrl,
@@ -5577,6 +5600,8 @@ async function saveTasting() {
     if (result.success) {
       showMessage("tastingMessage", result.message, "success");
 
+      editingTastingRowNumber = null;
+
       document.getElementById("tastingDate").value = "";
       document.getElementById("tastingTimeFrom").value = "";
       document.getElementById("tastingTimeTo").value = "";
@@ -5584,14 +5609,75 @@ async function saveTasting() {
       document.getElementById("tastingNotes").value = "";
       document.getElementById("tastingImageUrl").value = "";
 
+      document.getElementById("tastingFormTitle").textContent = "Book Tasting";
+      document.getElementById("saveTastingBtn").textContent = "Book Tasting";
+      document.getElementById("cancelTastingEditBtn").style.display = "none";
+
       await loadTastings();
     } else {
       showMessage("tastingMessage", result.message, "error");
     }
 
   } catch {
-    showMessage("tastingMessage", "Could not book tasting.", "error");
+    showMessage(
+      "tastingMessage",
+      isEditing ? "Could not update tasting." : "Could not book tasting.",
+      "error"
+    );
   }
+}
+
+function editTasting(rowNumber) {
+  const tasting = tastingsData.find(
+    item => Number(item.rowNumber) === Number(rowNumber)
+  );
+
+  if (!tasting) {
+    showMessage("tastingMessage", "Could not find this tasting.", "error");
+    return;
+  }
+
+  editingTastingRowNumber = Number(rowNumber);
+
+  document.getElementById("tastingDate").value =
+    normalizeDateKey(tasting.dateReserved);
+
+  const timeParts = String(tasting.timeSlot || "").split(" - ");
+
+  document.getElementById("tastingTimeFrom").value = timeParts[0] || "";
+  document.getElementById("tastingTimeTo").value = timeParts[1] || "";
+
+  document.getElementById("tastingProducts").value = tasting.products || "";
+  document.getElementById("tastingNotes").value = tasting.notes || "";
+  document.getElementById("tastingImageUrl").value = tasting.imageUrl || "";
+
+  document.getElementById("tastingFormTitle").textContent = "Edit Tasting";
+  document.getElementById("saveTastingBtn").textContent = "Save Changes";
+  document.getElementById("cancelTastingEditBtn").style.display = "inline-block";
+
+  showMessage("tastingMessage", "Editing selected tasting.", "");
+
+  document.getElementById("tastingFormTitle").scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+function cancelEditTasting() {
+  editingTastingRowNumber = null;
+
+  document.getElementById("tastingDate").value = "";
+  document.getElementById("tastingTimeFrom").value = "";
+  document.getElementById("tastingTimeTo").value = "";
+  document.getElementById("tastingProducts").value = "";
+  document.getElementById("tastingNotes").value = "";
+  document.getElementById("tastingImageUrl").value = "";
+
+  document.getElementById("tastingFormTitle").textContent = "Book Tasting";
+  document.getElementById("saveTastingBtn").textContent = "Book Tasting";
+  document.getElementById("cancelTastingEditBtn").style.display = "none";
+
+  showMessage("tastingMessage", "", "");
 }
 
 async function loadTastings() {
@@ -5650,7 +5736,7 @@ function renderTastingList() {
   tbody.innerHTML = "";
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="5">No tastings found for this month.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6">No tastings found for this month.</td></tr>`;
     return;
   }
 
@@ -5666,6 +5752,10 @@ function renderTastingList() {
         <td>${tasting.notes || ""}</td>
         <td>${tasting.createdBy || ""}</td>
         <td>
+          <button class="secondary" onclick="editTasting(${tasting.rowNumber})">
+            Edit
+          </button>
+
           <button class="danger" onclick="deleteTasting(${tasting.rowNumber})">
             Delete
           </button>
