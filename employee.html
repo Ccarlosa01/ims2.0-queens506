@@ -794,6 +794,75 @@
       font-size: 11px;
     }
 
+
+    .vendor-db-modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.45);
+      z-index: 120000;
+    }
+
+    .vendor-db-modal.show {
+      display: flex;
+    }
+
+    .vendor-db-dialog {
+      width: min(560px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+      padding: 24px;
+    }
+
+    .vendor-db-dialog h2 {
+      margin-bottom: 6px;
+    }
+
+    .vendor-db-progress {
+      margin-bottom: 18px;
+      color: #666;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .vendor-db-product {
+      padding: 14px;
+      margin-bottom: 16px;
+      background: #f4f6f8;
+      border: 1px solid #e0e4ea;
+      border-radius: 10px;
+    }
+
+    .vendor-db-product strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .vendor-db-new-input {
+      display: none;
+      margin-top: 8px;
+    }
+
+    .vendor-db-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .vendor-db-error {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #b00020;
+      font-weight: 600;
+    }
+
     .tasting-calendar {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -954,62 +1023,7 @@
       header { display:block; }
       .logout { margin-top:10px; }
     }
-  
-
-    /* ===== Vendor Database Missing-Info Modal ===== */
-    .vendor-db-modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 120000;
-      background: rgba(0,0,0,0.52);
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-
-    .vendor-db-modal-overlay.open {
-      display: flex;
-    }
-
-    .vendor-db-modal {
-      width: min(560px, 100%);
-      max-height: 90vh;
-      overflow-y: auto;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 18px 50px rgba(0,0,0,0.28);
-      padding: 24px;
-      box-sizing: border-box;
-    }
-
-    .vendor-db-product {
-      margin: 14px 0 18px;
-      padding: 12px 14px;
-      background: #f4f6f8;
-      border-radius: 10px;
-      line-height: 1.45;
-    }
-
-    .vendor-db-progress {
-      color: #666;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-
-    .vendor-db-new-input {
-      display: none;
-      margin-top: 8px;
-    }
-
-    .vendor-db-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 18px;
-    }
-</style>
+  </style>
 </head>
 
 <body>
@@ -1789,41 +1803,47 @@
   </div>
 
 
-<div id="vendorDbModalOverlay" class="vendor-db-modal-overlay">
-  <div class="vendor-db-modal" role="dialog" aria-modal="true" aria-labelledby="vendorDbModalTitle">
-    <div id="vendorDbProgress" class="vendor-db-progress"></div>
-    <h2 id="vendorDbModalTitle">Missing Vendor Information</h2>
+  <div id="vendorDatabaseModal" class="vendor-db-modal" aria-hidden="true">
+    <div class="vendor-db-dialog" role="dialog" aria-modal="true" aria-labelledby="vendorDatabaseModalTitle">
+      <h2 id="vendorDatabaseModalTitle">Vendor Information Needed</h2>
+      <div id="vendorDatabaseProgress" class="vendor-db-progress"></div>
 
-    <div class="vendor-db-product">
-      <strong id="vendorDbItemNo"></strong><br>
-      <span id="vendorDbDescription"></span>
-    </div>
+      <div class="vendor-db-product">
+        <strong id="vendorDatabaseItem"></strong>
+        <div id="vendorDatabaseDescription"></div>
+        <div id="vendorDatabaseQty" class="muted" style="margin-top:6px;"></div>
+      </div>
 
-    <label for="vendorDbVendorSelect">Vendor</label>
-    <select id="vendorDbVendorSelect" onchange="handleVendorDbSelectChange('vendor')"></select>
-    <input
-      id="vendorDbNewVendor"
-      class="vendor-db-new-input"
-      placeholder="Enter new vendor"
-    />
+      <label for="vendorDatabaseVendorSelect">Vendor</label>
+      <select id="vendorDatabaseVendorSelect" onchange="handleVendorDatabaseSelectChange('vendor')"></select>
+      <input
+        id="vendorDatabaseNewVendor"
+        class="vendor-db-new-input"
+        placeholder="Enter new vendor"
+      />
 
-    <label for="vendorDbSalesRepSelect">Sales Rep</label>
-    <select id="vendorDbSalesRepSelect" onchange="handleVendorDbSelectChange('salesRep')"></select>
-    <input
-      id="vendorDbNewSalesRep"
-      class="vendor-db-new-input"
-      placeholder="Enter new sales rep"
-    />
+      <label for="vendorDatabaseSalesRepSelect">Sales Rep</label>
+      <select id="vendorDatabaseSalesRepSelect" onchange="handleVendorDatabaseSelectChange('salesRep')"></select>
+      <input
+        id="vendorDatabaseNewSalesRep"
+        class="vendor-db-new-input"
+        placeholder="Enter new sales rep"
+      />
 
-    <div id="vendorDbMessage" class="message"></div>
+      <div id="vendorDatabaseError" class="vendor-db-error"></div>
 
-    <div class="vendor-db-actions">
-      <button type="button" class="primary" onclick="saveCurrentVendorDbItem()">
-        Save & Continue
-      </button>
+      <div class="vendor-db-actions">
+        <button
+          type="button"
+          class="primary"
+          id="saveVendorDatabaseBtn"
+          onclick="saveCurrentVendorDatabaseAssignment()"
+        >
+          Save & Continue
+        </button>
+      </div>
     </div>
   </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
@@ -1832,7 +1852,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6xgFtG5dZ2EdrAAplyapoNuJx43BkqesTPKuMIn1mBgz0XCHEW6MsY-zuaXt9SDoCGw/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbydZXcey-phUvg8FWwYKlttIqdd1xOlddtbWdVS_3BWmcLRsaaNWgIJiAjzTfvp9H0rxg/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -2480,10 +2500,11 @@ async function uploadInventoryFile() {
   }
 }
 
-let pendingVendorDbItems = [];
-let pendingVendorDbIndex = 0;
-let vendorDbVendorOptions = [];
-let vendorDbSalesRepOptions = [];
+
+let pendingVendorDatabaseItems = [];
+let vendorDatabaseVendorOptions = [];
+let vendorDatabaseSalesRepOptions = [];
+let vendorDatabasePromptIndex = 0;
 
 async function uploadMagstarInventory() {
   const fileInput = document.getElementById("magstarInventoryFile");
@@ -2523,7 +2544,7 @@ async function uploadMagstarInventory() {
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
     /*
-     * Preserve the existing Magstar importer behavior.
+     * Read the worksheet as a raw 2D array.
      * Row 1 = report title
      * Row 2 = headers
      * Row 3+ = inventory
@@ -2545,6 +2566,9 @@ async function uploadMagstarInventory() {
       return;
     }
 
+    /*
+     * Validate row 2 headers.
+     */
     const headers = sheetRows[1].map(value =>
       String(value || "").trim()
     );
@@ -2574,27 +2598,45 @@ async function uploadMagstarInventory() {
       return;
     }
 
+    /*
+     * Data begins on Excel row 3.
+     */
     const sourceRows = sheetRows.slice(2);
 
     const rows = sourceRows
       .filter(row => {
         const sku = String(row[1] || "").trim();
         const description = String(row[2] || "").trim();
+
         return sku || description;
       })
-      .map(row => [
-        "",             // A
-        row[1] || "",   // B - Item No. <- SKU/UPC
-        row[2] || "",   // C - Description
-        "",             // D
-        "",             // E
-        row[6] || "",   // F - Qty On Hand
-        "",             // G
-        row[5] || "",   // H - Avg Cost / WAC
-        row[4] || "",   // I - Base Price
-        "",             // J
-        row[7] || ""    // K - Gross M %
-      ]);
+      .map(row => {
+
+        /*
+         * Create Inventory A:K.
+         *
+         * Excel B -> Inventory B
+         * Excel C -> Inventory C
+         * Excel G -> Inventory F
+         * Excel F -> Inventory H
+         * Excel E -> Inventory I
+         * Excel H -> Inventory K
+         */
+
+        return [
+          "",             // A
+          row[1] || "",   // B - Item No. <- SKU/UPC
+          row[2] || "",   // C - Description
+          "",             // D
+          "",             // E
+          row[6] || "",   // F - Qty On Hand
+          "",             // G
+          row[5] || "",   // H - Avg Cost / WAC
+          row[4] || "",   // I - Base Price
+          "",             // J
+          row[7] || ""    // K - Gross M %
+        ];
+      });
 
     if (!rows.length) {
       showMessage(
@@ -2627,42 +2669,45 @@ async function uploadMagstarInventory() {
         result.message || "Magstar inventory upload failed.",
         "error"
       );
+
       return;
     }
 
+    showMessage(
+      "magstarInventoryMessage",
+      `Magstar inventory uploaded successfully. ${rows.length} rows imported.`,
+      "success"
+    );
+
     fileInput.value = "";
 
+    /*
+     * Refresh app inventory after replacing it.
+     */
     await loadInventory();
 
-    pendingVendorDbItems = Array.isArray(result.missingVendorItems)
-      ? result.missingVendorItems
-      : [];
-
-    vendorDbVendorOptions = Array.isArray(result.vendors)
-      ? result.vendors
-      : [];
-
-    vendorDbSalesRepOptions = Array.isArray(result.salesReps)
-      ? result.salesReps
-      : [];
-
-    pendingVendorDbIndex = 0;
-
-    if (pendingVendorDbItems.length) {
+    /*
+     * Vendor Database matching happens only AFTER the normal Magstar
+     * upload has completed successfully.
+     */
+    if (result.vendorDatabaseWarning) {
       showMessage(
         "magstarInventoryMessage",
-        `Magstar inventory uploaded successfully. ${rows.length} rows imported. ` +
-        `${pendingVendorDbItems.length} active item(s) need Vendor / Sales Rep information.`,
+        `Magstar inventory uploaded successfully. ${rows.length} rows imported. ${result.vendorDatabaseWarning}`,
         "success"
       );
+    }
 
-      openVendorDbModal();
-    } else {
-      showMessage(
-        "magstarInventoryMessage",
-        `Magstar inventory uploaded successfully. ${rows.length} rows imported. ` +
-        `All active items were matched to Vendor Database.`,
-        "success"
+    const missingVendorItems =
+      Array.isArray(result.missingVendorItems)
+        ? result.missingVendorItems
+        : [];
+
+    if (missingVendorItems.length) {
+      startVendorDatabasePrompt(
+        missingVendorItems,
+        result.vendorOptions || [],
+        result.salesRepOptions || []
       );
     }
 
@@ -2677,209 +2722,391 @@ async function uploadMagstarInventory() {
   }
 }
 
-function openVendorDbModal() {
-  if (!pendingVendorDbItems.length || pendingVendorDbIndex >= pendingVendorDbItems.length) {
-    closeVendorDbModal();
+
+function startVendorDatabasePrompt(
+  items,
+  vendors,
+  salesReps
+) {
+  pendingVendorDatabaseItems =
+    Array.isArray(items) ? [...items] : [];
+
+  vendorDatabaseVendorOptions =
+    Array.isArray(vendors) ? [...vendors] : [];
+
+  vendorDatabaseSalesRepOptions =
+    Array.isArray(salesReps) ? [...salesReps] : [];
+
+  vendorDatabasePromptIndex = 0;
+
+  if (!pendingVendorDatabaseItems.length) {
     return;
   }
 
-  const item = pendingVendorDbItems[pendingVendorDbIndex];
-  const overlay = document.getElementById("vendorDbModalOverlay");
+  const modal =
+    document.getElementById("vendorDatabaseModal");
 
-  document.getElementById("vendorDbProgress").textContent =
-    `Item ${pendingVendorDbIndex + 1} of ${pendingVendorDbItems.length}`;
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
 
-  document.getElementById("vendorDbItemNo").textContent =
-    item.itemNo || "";
+  renderVendorDatabasePrompt();
+}
 
-  document.getElementById("vendorDbDescription").textContent =
+function renderVendorDatabasePrompt() {
+  const item =
+    pendingVendorDatabaseItems[
+      vendorDatabasePromptIndex
+    ];
+
+  if (!item) {
+    finishVendorDatabasePrompt();
+    return;
+  }
+
+  document.getElementById(
+    "vendorDatabaseProgress"
+  ).textContent =
+    `Item ${vendorDatabasePromptIndex + 1} of ${pendingVendorDatabaseItems.length}`;
+
+  document.getElementById(
+    "vendorDatabaseItem"
+  ).textContent =
+    `Item No. ${item.itemNo || ""}`;
+
+  document.getElementById(
+    "vendorDatabaseDescription"
+  ).textContent =
     item.description || "";
 
-  populateVendorDbSelect(
-    "vendorDbVendorSelect",
-    vendorDbVendorOptions,
+  document.getElementById(
+    "vendorDatabaseQty"
+  ).textContent =
+    `Qty On Hand: ${item.qtyOnHand ?? ""}`;
+
+  populateVendorDatabaseSelect(
+    "vendorDatabaseVendorSelect",
+    vendorDatabaseVendorOptions,
     item.vendor || "",
-    "Select vendor...",
-    "__NEW_VENDOR__",
+    "Select Vendor",
     "+ Add New Vendor"
   );
 
-  populateVendorDbSelect(
-    "vendorDbSalesRepSelect",
-    vendorDbSalesRepOptions,
+  populateVendorDatabaseSelect(
+    "vendorDatabaseSalesRepSelect",
+    vendorDatabaseSalesRepOptions,
     item.salesRep || "",
-    "Select sales rep...",
-    "__NEW_SALES_REP__",
+    "Select Sales Rep",
     "+ Add New Sales Rep"
   );
 
-  document.getElementById("vendorDbNewVendor").value = "";
-  document.getElementById("vendorDbNewSalesRep").value = "";
-  document.getElementById("vendorDbNewVendor").style.display = "none";
-  document.getElementById("vendorDbNewSalesRep").style.display = "none";
-  showMessage("vendorDbMessage", "", "");
+  document.getElementById(
+    "vendorDatabaseNewVendor"
+  ).value = "";
 
-  overlay.classList.add("open");
+  document.getElementById(
+    "vendorDatabaseNewSalesRep"
+  ).value = "";
+
+  document.getElementById(
+    "vendorDatabaseNewVendor"
+  ).style.display = "none";
+
+  document.getElementById(
+    "vendorDatabaseNewSalesRep"
+  ).style.display = "none";
+
+  document.getElementById(
+    "vendorDatabaseError"
+  ).textContent = "";
+
+  const saveBtn =
+    document.getElementById(
+      "saveVendorDatabaseBtn"
+    );
+
+  saveBtn.disabled = false;
+  saveBtn.textContent =
+    vendorDatabasePromptIndex ===
+    pendingVendorDatabaseItems.length - 1
+      ? "Save & Finish"
+      : "Save & Continue";
 }
 
-function populateVendorDbSelect(
+function populateVendorDatabaseSelect(
   selectId,
   values,
   selectedValue,
   placeholder,
-  newValue,
-  newLabel
+  addNewLabel
 ) {
-  const select = document.getElementById(selectId);
+  const select =
+    document.getElementById(selectId);
+
   select.innerHTML = "";
 
-  const placeholderOption = document.createElement("option");
+  const placeholderOption =
+    document.createElement("option");
+
   placeholderOption.value = "";
-  placeholderOption.textContent = placeholder;
-  select.appendChild(placeholderOption);
+  placeholderOption.textContent =
+    placeholder;
 
-  [...new Set(values.filter(Boolean))]
-    .sort((a, b) => String(a).localeCompare(String(b)))
-    .forEach(value => {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      select.appendChild(option);
-    });
+  select.appendChild(
+    placeholderOption
+  );
 
-  const addOption = document.createElement("option");
-  addOption.value = newValue;
-  addOption.textContent = newLabel;
-  select.appendChild(addOption);
-
-  if (selectedValue) {
-    const exists = Array.from(select.options).some(
-      option => option.value === selectedValue
+  const uniqueValues =
+    [...new Set(
+      (values || [])
+        .map(value =>
+          String(value || "").trim()
+        )
+        .filter(Boolean)
+    )].sort((a, b) =>
+      a.localeCompare(b)
     );
 
-    if (!exists) {
-      const option = document.createElement("option");
-      option.value = selectedValue;
-      option.textContent = selectedValue;
-      select.insertBefore(option, addOption);
-    }
+  uniqueValues.forEach(value => {
+    const option =
+      document.createElement("option");
 
-    select.value = selectedValue;
+    option.value = value;
+    option.textContent = value;
+
+    select.appendChild(option);
+  });
+
+  const addNewOption =
+    document.createElement("option");
+
+  addNewOption.value = "__new__";
+  addNewOption.textContent =
+    addNewLabel;
+
+  select.appendChild(addNewOption);
+
+  if (
+    selectedValue &&
+    !uniqueValues.includes(selectedValue)
+  ) {
+    const existingOption =
+      document.createElement("option");
+
+    existingOption.value =
+      selectedValue;
+
+    existingOption.textContent =
+      selectedValue;
+
+    select.insertBefore(
+      existingOption,
+      addNewOption
+    );
+  }
+
+  select.value =
+    selectedValue || "";
+}
+
+function handleVendorDatabaseSelectChange(
+  type
+) {
+  const isVendor =
+    type === "vendor";
+
+  const select =
+    document.getElementById(
+      isVendor
+        ? "vendorDatabaseVendorSelect"
+        : "vendorDatabaseSalesRepSelect"
+    );
+
+  const input =
+    document.getElementById(
+      isVendor
+        ? "vendorDatabaseNewVendor"
+        : "vendorDatabaseNewSalesRep"
+    );
+
+  const isNew =
+    select.value === "__new__";
+
+  input.style.display =
+    isNew ? "block" : "none";
+
+  if (isNew) {
+    input.focus();
+  } else {
+    input.value = "";
   }
 }
 
-function handleVendorDbSelectChange(type) {
-  if (type === "vendor") {
-    const isNew =
-      document.getElementById("vendorDbVendorSelect").value === "__NEW_VENDOR__";
+function getVendorDatabaseSelectedValue(
+  type
+) {
+  const isVendor =
+    type === "vendor";
 
-    document.getElementById("vendorDbNewVendor").style.display =
-      isNew ? "block" : "none";
+  const select =
+    document.getElementById(
+      isVendor
+        ? "vendorDatabaseVendorSelect"
+        : "vendorDatabaseSalesRepSelect"
+    );
 
-    if (isNew) {
-      document.getElementById("vendorDbNewVendor").focus();
-    }
+  if (select.value !== "__new__") {
+    return String(
+      select.value || ""
+    ).trim();
   }
 
-  if (type === "salesRep") {
-    const isNew =
-      document.getElementById("vendorDbSalesRepSelect").value === "__NEW_SALES_REP__";
-
-    document.getElementById("vendorDbNewSalesRep").style.display =
-      isNew ? "block" : "none";
-
-    if (isNew) {
-      document.getElementById("vendorDbNewSalesRep").focus();
-    }
-  }
+  return String(
+    document.getElementById(
+      isVendor
+        ? "vendorDatabaseNewVendor"
+        : "vendorDatabaseNewSalesRep"
+    ).value || ""
+  ).trim();
 }
 
-async function saveCurrentVendorDbItem() {
-  const item = pendingVendorDbItems[pendingVendorDbIndex];
-  if (!item) return;
+async function saveCurrentVendorDatabaseAssignment() {
+  const item =
+    pendingVendorDatabaseItems[
+      vendorDatabasePromptIndex
+    ];
 
-  const vendorSelect = document.getElementById("vendorDbVendorSelect");
-  const salesRepSelect = document.getElementById("vendorDbSalesRepSelect");
-
-  const vendor = vendorSelect.value === "__NEW_VENDOR__"
-    ? document.getElementById("vendorDbNewVendor").value.trim()
-    : vendorSelect.value.trim();
-
-  const salesRep = salesRepSelect.value === "__NEW_SALES_REP__"
-    ? document.getElementById("vendorDbNewSalesRep").value.trim()
-    : salesRepSelect.value.trim();
-
-  if (!vendor || !salesRep) {
-    showMessage(
-      "vendorDbMessage",
-      "Please select or enter both a Vendor and Sales Rep.",
-      "error"
-    );
+  if (!item) {
+    finishVendorDatabasePrompt();
     return;
   }
 
+  const vendor =
+    getVendorDatabaseSelectedValue(
+      "vendor"
+    );
+
+  const salesRep =
+    getVendorDatabaseSelectedValue(
+      "salesRep"
+    );
+
+  const errorEl =
+    document.getElementById(
+      "vendorDatabaseError"
+    );
+
+  if (!vendor || !salesRep) {
+    errorEl.textContent =
+      "Please select or add both a Vendor and Sales Rep.";
+    return;
+  }
+
+  const saveBtn =
+    document.getElementById(
+      "saveVendorDatabaseBtn"
+    );
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
+  errorEl.textContent = "";
+
   try {
-    showMessage("vendorDbMessage", "Saving...", "");
+    const response =
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action:
+            "saveVendorDatabaseAssignment",
+          itemNo:
+            item.itemNo || "",
+          description:
+            item.description || "",
+          vendor,
+          salesRep
+        })
+      });
 
-    const response = await fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        action: "saveVendorDatabaseEntry",
-        itemNo: item.itemNo,
-        description: item.description,
-        vendor,
-        salesRep
-      })
-    });
-
-    const result = await response.json();
+    const result =
+      await response.json();
 
     if (!result.success) {
-      showMessage(
-        "vendorDbMessage",
-        result.message || "Could not save Vendor Database information.",
-        "error"
-      );
+      errorEl.textContent =
+        result.message ||
+        "Could not save Vendor/Sales Rep.";
+
+      saveBtn.disabled = false;
+      saveBtn.textContent =
+        "Save & Continue";
+
       return;
     }
 
-    if (!vendorDbVendorOptions.includes(vendor)) {
-      vendorDbVendorOptions.push(vendor);
+    vendorDatabaseVendorOptions =
+      Array.isArray(result.vendors)
+        ? result.vendors
+        : vendorDatabaseVendorOptions;
+
+    vendorDatabaseSalesRepOptions =
+      Array.isArray(result.salesReps)
+        ? result.salesReps
+        : vendorDatabaseSalesRepOptions;
+
+    vendorDatabasePromptIndex++;
+
+    if (
+      vendorDatabasePromptIndex >=
+      pendingVendorDatabaseItems.length
+    ) {
+      finishVendorDatabasePrompt();
+      return;
     }
 
-    if (!vendorDbSalesRepOptions.includes(salesRep)) {
-      vendorDbSalesRepOptions.push(salesRep);
-    }
-
-    pendingVendorDbIndex += 1;
-
-    if (pendingVendorDbIndex < pendingVendorDbItems.length) {
-      openVendorDbModal();
-    } else {
-      closeVendorDbModal();
-      await loadInventory();
-
-      showMessage(
-        "magstarInventoryMessage",
-        "Magstar inventory upload complete. All active items now have Vendor and Sales Rep information.",
-        "success"
-      );
-    }
+    renderVendorDatabasePrompt();
 
   } catch (error) {
     console.error(error);
-    showMessage(
-      "vendorDbMessage",
-      "Could not save Vendor Database information.",
-      "error"
-    );
+
+    errorEl.textContent =
+      "Could not save Vendor/Sales Rep.";
+
+    saveBtn.disabled = false;
+    saveBtn.textContent =
+      "Save & Continue";
   }
 }
 
-function closeVendorDbModal() {
-  const overlay = document.getElementById("vendorDbModalOverlay");
-  if (overlay) overlay.classList.remove("open");
+async function finishVendorDatabasePrompt() {
+  const modal =
+    document.getElementById(
+      "vendorDatabaseModal"
+    );
+
+  modal.classList.remove("show");
+  modal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+  pendingVendorDatabaseItems = [];
+  vendorDatabasePromptIndex = 0;
+
+  /*
+   * Refresh inventory so the newly saved Vendor/Sales Rep values
+   * are immediately available everywhere else in the app.
+   */
+  try {
+    await loadInventory();
+  } catch (error) {
+    console.error(error);
+  }
+
+  showMessage(
+    "magstarInventoryMessage",
+    "Magstar inventory uploaded successfully. Vendor and Sales Rep information is up to date.",
+    "success"
+  );
 }
+
 
 function showMessage(id, text, type) {
   const el = document.getElementById(id);
