@@ -4535,7 +4535,15 @@ async function downloadExistingInventoryOnly() {
     const worksheet = workbook.addWorksheet("Existing Inventory");
 
     rows.forEach(row => {
-      worksheet.addRow(row);
+      const cleanedRow = row.map(value => {
+        if (value === "" || value === null || value === undefined) {
+          return null;
+        }
+    
+        return value;
+      });
+    
+      worksheet.addRow(cleanedRow);
     });
 
     const headerRow = worksheet.getRow(1);
