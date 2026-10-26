@@ -1890,6 +1890,27 @@
     </div>
   </div>
 
+
+  <div id="magstarBHModal" class="vendor-db-modal" aria-hidden="true">
+    <div class="vendor-db-dialog" role="dialog" aria-modal="true" aria-labelledby="magstarBHModalTitle">
+      <h2 id="magstarBHModalTitle">Upload Magstar B&amp;H Report</h2>
+      <p class="muted">
+        Final Magstar step: upload the B&amp;H report. Its Qty On Hand will update Inventory Qty On PO.
+        Inventory items not found in this report will be set to 0 Qty On PO.
+      </p>
+
+      <input type="file" id="magstarBHFile" accept=".xlsx,.xls" />
+
+      <div class="vendor-db-actions">
+        <button type="button" class="primary" id="uploadMagstarBHBtn" onclick="uploadMagstarBHReport()">
+          Upload B&amp;H Report
+        </button>
+      </div>
+
+      <div id="magstarBHMessage" class="message"></div>
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
@@ -1897,7 +1918,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxoszhG2iHZmqJayPdi799hEUPEqGHOvO6efJoAZ9X3Dm0bcMjamelFmNVEBlmiVfwXA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgtMNtUglHSApVX493zLGaCbwqaGeTi0FIyAdsqq4EjdV0j8g-Rx1PK9f5lATC65KwZA/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -2754,6 +2775,8 @@ async function uploadMagstarInventory() {
         result.vendorOptions || [],
         result.salesRepOptions || []
       );
+    } else {
+      showMagstarBHModal();
     }
 
   } catch (error) {
@@ -3150,8 +3173,198 @@ async function finishVendorDatabasePrompt() {
     "Magstar inventory uploaded successfully. Vendor and Sales Rep information is up to date.",
     "success"
   );
+
+  showMagstarBHModal();
 }
 
+
+function showMagstarBHModal() {
+  const modal = document.getElementById("magstarBHModal");
+  const fileInput = document.getElementById("magstarBHFile");
+  const message = document.getElementById("magstarBHMessage");
+  const uploadBtn = document.getElementById("uploadMagstarBHBtn");
+
+  if (fileInput) fileInput.value = "";
+  if (message) {
+    message.textContent = "";
+    message.className = "message";
+  }
+  if (uploadBtn) {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload B&H Report";
+  }
+
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeMagstarBHModal() {
+  const modal = document.getElementById("magstarBHModal");
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+async function uploadMagstarBHReport() {
+  const fileInput = document.getElementById("magstarBHFile");
+  const message = document.getElementById("magstarBHMessage");
+  const uploadBtn = document.getElementById("uploadMagstarBHBtn");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    showMessage(
+      "magstarBHMessage",
+      "Please choose the Magstar B&H report first.",
+      "error"
+    );
+    return;
+  }
+
+  if (currentUser.role !== "Manager") {
+    showMessage(
+      "magstarBHMessage",
+      "Only managers can upload the Magstar B&H report.",
+      "error"
+    );
+    return;
+  }
+
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = "Uploading...";
+
+  try {
+    showMessage(
+      "magstarBHMessage",
+      "Reading Magstar B&H report...",
+      ""
+    );
+
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: "array" });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    const sheetRows = XLSX.utils.sheet_to_json(
+      worksheet,
+      {
+        header: 1,
+        defval: ""
+      }
+    );
+
+    if (sheetRows.length < 3) {
+      showMessage(
+        "magstarBHMessage",
+        "The Magstar B&H report does not contain inventory rows.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
+      return;
+    }
+
+    const headers = sheetRows[1].map(value =>
+      String(value ?? "").trim()
+    );
+
+    const expectedHeaders = [
+      "Item Number",
+      "SKU/UPC",
+      "Description",
+      "Location",
+      "Zone/List Price",
+      "WAC",
+      "Qty On Hand",
+      "GPM%"
+    ];
+
+    const headersValid = expectedHeaders.every(
+      (header, index) => headers[index] === header
+    );
+
+    if (!headersValid) {
+      showMessage(
+        "magstarBHMessage",
+        "The uploaded file does not match the expected Magstar B&H report format.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
+      return;
+    }
+
+    const rows = sheetRows
+      .slice(2)
+      .filter(row => {
+        const itemNumber = String(row[0] ?? "").trim();
+        const skuUpc = String(row[1] ?? "").trim();
+        return itemNumber || skuUpc;
+      })
+      .map(row => ({
+        itemNumber: row[0] ?? "",
+        skuUpc: row[1] ?? "",
+        qtyOnHand: row[6] ?? 0
+      }));
+
+    if (!rows.length) {
+      showMessage(
+        "magstarBHMessage",
+        "No item rows were found in the Magstar B&H report.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
+      return;
+    }
+
+    showMessage(
+      "magstarBHMessage",
+      `Matching ${rows.length} B&H item rows to Inventory...`,
+      ""
+    );
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "updateMagstarBHQtyOnPO",
+        rows
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage(
+        "magstarBHMessage",
+        result.message || "Could not update Qty On PO from the B&H report.",
+        "error"
+      );
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload B&H Report";
+      return;
+    }
+
+    await loadInventory();
+
+    closeMagstarBHModal();
+
+    showMessage(
+      "magstarInventoryMessage",
+      result.message || "Magstar B&H report applied successfully.",
+      "success"
+    );
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "magstarBHMessage",
+      "There was an error processing the Magstar B&H report.",
+      "error"
+    );
+
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload B&H Report";
+  }
+}
 
 function showMessage(id, text, type) {
   const el = document.getElementById(id);
@@ -3172,6 +3385,7 @@ function clearAllMessages() {
     "inventoryEntryProductInfo",
     "inventoryScannerMessage",
     "barcodeUploadMessage",
+    "magstarBHMessage",
     "inventoryReportMessage",
     "tastingMessage",
     "recountInventoryUploadMessage",
