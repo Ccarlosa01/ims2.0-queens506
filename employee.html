@@ -2650,8 +2650,8 @@ async function uploadMagstarInventory() {
 
     const rows = sourceRows
       .filter(row => {
-        const sku = String(row[1] || "").trim();
-        const description = String(row[2] || "").trim();
+        const sku = String(row[1] ?? "").trim();
+        const description = String(row[2] ?? "").trim();
 
         return sku || description;
       })
@@ -2670,16 +2670,16 @@ async function uploadMagstarInventory() {
 
         return [
           "",             // A
-          row[1] || "",   // B - Item No. <- SKU/UPC
-          row[2] || "",   // C - Description
+          row[1] ?? "",   // B - Item No. <- SKU/UPC
+          row[2] ?? "",   // C - Description
           "",             // D
           "",             // E
-          row[6] || "",   // F - Qty On Hand
+          row[6] ?? "",   // F - Qty On Hand
           "",             // G
-          row[5] || "",   // H - Avg Cost / WAC
-          row[4] || "",   // I - Base Price
+          row[5] ?? "",   // H - Avg Cost / WAC
+          row[4] ?? "",   // I - Base Price
           "",             // J
-          row[7] || ""    // K - Gross M %
+          row[7] ?? ""    // K - Gross M %
         ];
       });
 
