@@ -1075,7 +1075,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="showTab('workbench', this)">Update Pallet</button>
     <button class="tab-btn" onclick="showTab('catalog', this)">Catalog View</button>
-    <button class="tab-btn" onclick="showTab('clear', this)">Clear Pallets</button>
+    <button class="tab-btn" onclick="showTab('clear', this)">Manipulate Pallets</button>
     <button class="tab-btn" onclick="showTab('breakers', this)">Breakers</button>
     <button class="tab-btn" onclick="showTab('customerOrder', this)">Customer Order</button>
     <button class="tab-btn" onclick="showTab('priceTags', this)">Price Tags</button>
@@ -1217,6 +1217,45 @@
       <button class="danger" onclick="clearMultiplePallets()">Clear Selected Pallets</button>
 
       <div id="clearMessage" class="message"></div>
+    </div>
+
+    <div class="card">
+      <h2>Swap Pallet Information</h2>
+      <p class="muted">
+        Swap all existing pallet information between two pallet numbers.
+      </p>
+
+      <div class="row">
+        <div>
+          <label for="swapPalletOne">Target Pallet #:</label>
+          <input
+            type="number"
+            id="swapPalletOne"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            placeholder="Example: 5"
+          />
+        </div>
+
+        <div>
+          <label for="swapPalletTwo">Target Pallet #:</label>
+          <input
+            type="number"
+            id="swapPalletTwo"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            placeholder="Example: 10"
+          />
+        </div>
+      </div>
+
+      <button class="primary" onclick="swapPalletInformation()">
+        Swap Pallet Information
+      </button>
+
+      <div id="swapPalletMessage" class="message"></div>
     </div>
 
   </div>
@@ -1918,7 +1957,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgtMNtUglHSApVX493zLGaCbwqaGeTi0FIyAdsqq4EjdV0j8g-Rx1PK9f5lATC65KwZA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfA31d0MQEbTOWPp0tcfh8ZFbi32GZsigmveyB3M6V1_pB9YSglXLAK4chH6rg5FKNbg/exec";
 
 let currentUser = null;
 let inventory = [];
@@ -2504,6 +2543,119 @@ async function clearMultiplePallets() {
     }
   } catch {
     showMessage("clearMessage", "Could not clear selected pallets.", "error");
+  }
+}
+
+async function swapPalletInformation() {
+  const palletOneInput = document.getElementById("swapPalletOne");
+  const palletTwoInput = document.getElementById("swapPalletTwo");
+
+  const palletOne = String(palletOneInput.value || "").trim();
+  const palletTwo = String(palletTwoInput.value || "").trim();
+
+  if (!palletOne || !palletTwo) {
+    showMessage(
+      "swapPalletMessage",
+      "Enter both target pallet numbers.",
+      "error"
+    );
+    return;
+  }
+
+  if (!/^\d+$/.test(palletOne) || !/^\d+$/.test(palletTwo)) {
+    showMessage(
+      "swapPalletMessage",
+      "Target pallet numbers must contain numbers only.",
+      "error"
+    );
+    return;
+  }
+
+  if (!isValidPalletNumber(palletOne) || !isValidPalletNumber(palletTwo)) {
+    showMessage(
+      "swapPalletMessage",
+      `Both pallet numbers must be between 1 and ${maxPallets}.`,
+      "error"
+    );
+    return;
+  }
+
+  if (palletOne === palletTwo) {
+    showMessage(
+      "swapPalletMessage",
+      "Choose two different pallet numbers.",
+      "error"
+    );
+    return;
+  }
+
+  const confirmed = confirm(
+    `Swap all pallet information between Pallet ${palletOne} and Pallet ${palletTwo}?`
+  );
+
+  if (!confirmed) return;
+
+  try {
+    showMessage(
+      "swapPalletMessage",
+      `Swapping Pallet ${palletOne} and Pallet ${palletTwo}...`,
+      ""
+    );
+
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "swapPalletInformation",
+        palletOne,
+        palletTwo
+      })
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      showMessage(
+        "swapPalletMessage",
+        result.message || "Could not swap pallet information.",
+        "error"
+      );
+      return;
+    }
+
+    palletOneInput.value = "";
+    palletTwoInput.value = "";
+
+    showMessage(
+      "swapPalletMessage",
+      result.message,
+      "success"
+    );
+
+    if (typeof loadAllPallets === "function") {
+      await loadAllPallets();
+    }
+
+    const selectedPallet = String(
+      document.getElementById("palletNumber")?.value || ""
+    ).trim();
+
+    if (
+      selectedPallet === palletOne ||
+      selectedPallet === palletTwo
+    ) {
+      if (typeof loadPallet === "function") {
+        await loadPallet();
+      }
+    }
+
+  } catch (error) {
+    console.error(error);
+
+    showMessage(
+      "swapPalletMessage",
+      "Could not swap pallet information.",
+      "error"
+    );
   }
 }
 
